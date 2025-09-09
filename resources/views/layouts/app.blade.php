@@ -194,7 +194,7 @@
                         </a>
                         @endcan
                         @can('manage users')
-                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="#" onclick="alert('User management coming soon!')">
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                             <i class="bi bi-person-gear me-2"></i>User Management
                         </a>
                         @endcan

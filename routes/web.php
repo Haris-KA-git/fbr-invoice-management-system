@@ -49,6 +49,35 @@ Route::middleware('auth')->group(function () {
     Route::post('invoices/{invoice}/submit-to-fbr', [InvoiceController::class, 'submitToFbr'])
         ->name('invoices.submit-to-fbr')
         ->middleware('permission:submit invoices to fbr');
+
+    // Reports
+    Route::prefix('reports')->name('reports.')->middleware('permission:view reports')->group(function () {
+        Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('index');
+        Route::get('/sales', [App\Http\Controllers\ReportController::class, 'salesReport'])->name('sales');
+        Route::get('/customers', [App\Http\Controllers\ReportController::class, 'customerReport'])->name('customers');
+        Route::get('/items', [App\Http\Controllers\ReportController::class, 'itemReport'])->name('items');
+        Route::get('/tax', [App\Http\Controllers\ReportController::class, 'taxReport'])->name('tax');
+        Route::get('/export/sales', [App\Http\Controllers\ReportController::class, 'exportSales'])->name('export.sales')->middleware('permission:export reports');
+    });
+
+    // User Management
+    Route::prefix('users')->name('users.')->middleware('permission:manage users')->group(function () {
+        Route::get('/', [App\Http\Controllers\UserController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\UserController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\UserController::class, 'store'])->name('store');
+        Route::get('/{user}', [App\Http\Controllers\UserController::class, 'show'])->name('show');
+        Route::get('/{user}/edit', [App\Http\Controllers\UserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('destroy');
+        
+        // Role Management
+        Route::get('/roles/index', [App\Http\Controllers\UserController::class, 'roles'])->name('roles')->middleware('permission:manage roles');
+        Route::get('/roles/create', [App\Http\Controllers\UserController::class, 'createRole'])->name('create-role')->middleware('permission:manage roles');
+        Route::post('/roles', [App\Http\Controllers\UserController::class, 'storeRole'])->name('store-role')->middleware('permission:manage roles');
+        Route::get('/roles/{role}/edit', [App\Http\Controllers\UserController::class, 'editRole'])->name('edit-role')->middleware('permission:manage roles');
+        Route::put('/roles/{role}', [App\Http\Controllers\UserController::class, 'updateRole'])->name('update-role')->middleware('permission:manage roles');
+        Route::delete('/roles/{role}', [App\Http\Controllers\UserController::class, 'destroyRole'])->name('destroy-role')->middleware('permission:manage roles');
+    });
 });
 
 require __DIR__.'/auth.php';
