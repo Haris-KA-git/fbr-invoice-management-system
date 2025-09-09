@@ -57,14 +57,14 @@ class BusinessProfile extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)
+        return $this->belongsToMany(User::class, 'business_profile_user')
             ->withPivot(['role', 'permissions', 'is_active'])
             ->withTimestamps();
     }
 
     public function activeUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)
+        return $this->belongsToMany(User::class, 'business_profile_user')
             ->withPivot(['role', 'permissions', 'is_active'])
             ->wherePivot('is_active', true)
             ->withTimestamps();

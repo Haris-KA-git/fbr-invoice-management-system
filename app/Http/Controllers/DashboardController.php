@@ -21,8 +21,6 @@ class DashboardController extends Controller
         } else {
             // Get accessible business profile IDs (owned + shared)
             $profileIds = collect($user->getAccessibleBusinessProfileIds());
-        }
-        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
@@ -55,6 +53,9 @@ class DashboardController extends Controller
             ];
 
             // Monthly invoice data for chart
+            $monthlyData = Invoice::whereIn('business_profile_id', $profileIds)
+                ->where('status', '!=', 'discarded')
+                ->selectRaw('YEAR(invoice_date) as year, MONTH(invoice_date) as month, COUNT(*) as count')
                 ->whereYear('invoice_date', date('Y'))
                 ->groupBy('month', 'year')
                 ->orderBy('month')

@@ -27,10 +27,14 @@ return new class extends Migration
             $table->decimal('further_tax', 15, 2)->default(0);
             $table->decimal('withheld_tax', 15, 2)->default(0);
             $table->decimal('total_amount', 15, 2);
+            $table->enum('status', ['draft', 'active', 'discarded'])->default('draft');
             $table->json('fbr_json_data')->nullable();
             $table->enum('fbr_status', ['pending', 'validated', 'submitted', 'failed'])->default('pending');
             $table->text('fbr_response')->nullable();
             $table->text('fbr_error_message')->nullable();
+            $table->text('discard_reason')->nullable();
+            $table->timestamp('discarded_at')->nullable();
+            $table->foreignId('discarded_by')->nullable()->constrained('users');
             $table->string('qr_code')->nullable();
             $table->timestamps();
             

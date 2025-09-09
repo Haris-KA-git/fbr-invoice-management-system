@@ -13,7 +13,7 @@ class BusinessProfilePolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view business profiles');
     }
 
     /**
@@ -21,7 +21,18 @@ class BusinessProfilePolicy
      */
     public function view(User $user, BusinessProfile $businessProfile): bool
     {
-        return $user->id === $businessProfile->user_id;
+        // Admins can view all business profiles
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Check if user owns the business profile
+        if ($user->id === $businessProfile->user_id) {
+            return true;
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($businessProfile->id);
     }
 
     /**
@@ -29,7 +40,7 @@ class BusinessProfilePolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create business profiles') && $user->canCreateBusinessProfile();
     }
 
     /**
@@ -37,6 +48,12 @@ class BusinessProfilePolicy
      */
     public function update(User $user, BusinessProfile $businessProfile): bool
     {
+        // Admins can update all business profiles
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can update business profiles
         return $user->id === $businessProfile->user_id;
     }
 
@@ -45,6 +62,12 @@ class BusinessProfilePolicy
      */
     public function delete(User $user, BusinessProfile $businessProfile): bool
     {
+        // Admins can delete any business profile
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can delete business profiles
         return $user->id === $businessProfile->user_id;
     }
 
@@ -53,7 +76,7 @@ class BusinessProfilePolicy
      */
     public function restore(User $user, BusinessProfile $businessProfile): bool
     {
-        return $user->id === $businessProfile->user_id;
+        return $user->id === $businessProfile->user_id || $user->hasRole('Admin');
     }
 
     /**
@@ -61,6 +84,6 @@ class BusinessProfilePolicy
      */
     public function forceDelete(User $user, BusinessProfile $businessProfile): bool
     {
-        return $user->id === $businessProfile->user_id;
+        return $user->id === $businessProfile->user_id || $user->hasRole('Admin');
     }
 }
