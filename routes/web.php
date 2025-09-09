@@ -78,6 +78,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/roles/{role}', [App\Http\Controllers\UserController::class, 'updateRole'])->name('update-role')->middleware('permission:manage roles');
         Route::delete('/roles/{role}', [App\Http\Controllers\UserController::class, 'destroyRole'])->name('destroy-role')->middleware('permission:manage roles');
     });
+
+    // Audit Logs
+    Route::get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])
+        ->name('audit-logs.index')
+        ->middleware('permission:view audit logs');
 });
 
 require __DIR__.'/auth.php';

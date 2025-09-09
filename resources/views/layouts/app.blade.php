@@ -189,13 +189,18 @@
                         </a>
                         @endcan
                         @can('view reports')
-                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="#" onclick="alert('Reports module coming soon!')">
+                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
                             <i class="bi bi-graph-up me-2"></i>Reports
                         </a>
                         @endcan
                         @can('manage users')
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                             <i class="bi bi-person-gear me-2"></i>User Management
+                        </a>
+                        @endcan
+                        @can('view audit logs')
+                        <a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
+                            <i class="bi bi-file-text me-2"></i>Audit Logs
                         </a>
                         @endcan
                     </nav>
