@@ -21,7 +21,8 @@ class ItemPolicy
      */
     public function view(User $user, Item $item): bool
     {
-        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($item->business_profile_id, 'view_items');
     }
 
     /**
@@ -37,7 +38,8 @@ class ItemPolicy
      */
     public function update(User $user, Item $item): bool
     {
-        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($item->business_profile_id, 'edit_items');
     }
 
     /**
@@ -45,7 +47,8 @@ class ItemPolicy
      */
     public function delete(User $user, Item $item): bool
     {
-        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $item->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($item->business_profile_id, 'edit_items');
     }
 
     /**

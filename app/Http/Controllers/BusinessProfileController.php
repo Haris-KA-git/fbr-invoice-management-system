@@ -10,7 +10,11 @@ class BusinessProfileController extends Controller
 {
     public function index()
     {
-        $profiles = auth()->user()->businessProfiles()
+        // Get profiles user owns or has access to
+        $ownedProfiles = auth()->user()->businessProfiles();
+        $accessibleProfiles = auth()->user()->accessibleBusinessProfiles();
+        
+        $profiles = $ownedProfiles->union($accessibleProfiles)
             ->latest()
             ->paginate(10);
 
@@ -120,5 +124,85 @@ class BusinessProfileController extends Controller
 
         return redirect()->route('business-profiles.index')
             ->with('success', 'Business profile deleted successfully.');
+    }
+
+    public function users(BusinessProfile $businessProfile)
+    {
+        $this->authorize('view', $businessProfile);
+        
+        $businessProfile->load('users');
+        
+        // Get users not already added to this business profile
+        $existingUserIds = $businessProfile->users->pluck('id');
+        $availableUsers = User::whereNotIn('id', $existingUserIds)
+            ->where('id', '!=', $businessProfile->user_id)
+            ->orderBy('name')
+            ->get();
+
+        return view('business-profiles.users', compact('businessProfile', 'availableUsers'));
+    }
+
+    public function addUser(Request $request, BusinessProfile $businessProfile)
+    {
+        $this->authorize('update', $businessProfile);
+        
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|in:viewer,editor,manager',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
+        ]);
+
+        // Check if user is already added
+        if ($businessProfile->users()->where('user_id', $validated['user_id'])->exists()) {
+            return redirect()->back()->with('error', 'User is already added to this business profile.');
+        }
+
+        $businessProfile->users()->attach($validated['user_id'], [
+            'role' => $validated['role'],
+            'permissions' => json_encode($validated['permissions'] ?? []),
+            'is_active' => true,
+        ]);
+
+        return redirect()->back()->with('success', 'User added successfully.');
+    }
+
+    public function updateUser(Request $request, BusinessProfile $businessProfile, User $user)
+    {
+        $this->authorize('update', $businessProfile);
+        
+        $validated = $request->validate([
+            'role' => 'required|in:viewer,editor,manager,owner',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
+            'is_active' => 'boolean',
+        ]);
+
+        // Only owner can assign owner role
+        if ($validated['role'] === 'owner' && $user->id !== $businessProfile->user_id) {
+            return redirect()->back()->with('error', 'Only the original owner can have owner role.');
+        }
+
+        $businessProfile->users()->updateExistingPivot($user->id, [
+            'role' => $validated['role'],
+            'permissions' => json_encode($validated['permissions'] ?? []),
+            'is_active' => $request->has('is_active'),
+        ]);
+
+        return redirect()->back()->with('success', 'User access updated successfully.');
+    }
+
+    public function removeUser(BusinessProfile $businessProfile, User $user)
+    {
+        $this->authorize('update', $businessProfile);
+        
+        // Cannot remove the owner
+        if ($user->id === $businessProfile->user_id) {
+            return redirect()->back()->with('error', 'Cannot remove the business profile owner.');
+        }
+
+        $businessProfile->users()->detach($user->id);
+
+        return redirect()->back()->with('success', 'User removed successfully.');
     }
 }

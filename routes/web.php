@@ -34,6 +34,18 @@ Route::middleware('auth')->group(function () {
 
     // Business Profiles
     Route::resource('business-profiles', BusinessProfileController::class)->middleware('permission:view business profiles');
+    Route::get('business-profiles/{businessProfile}/users', [BusinessProfileController::class, 'users'])
+        ->name('business-profiles.users')
+        ->middleware('permission:view business profiles');
+    Route::post('business-profiles/{businessProfile}/users', [BusinessProfileController::class, 'addUser'])
+        ->name('business-profiles.add-user')
+        ->middleware('permission:edit business profiles');
+    Route::put('business-profiles/{businessProfile}/users/{user}', [BusinessProfileController::class, 'updateUser'])
+        ->name('business-profiles.update-user')
+        ->middleware('permission:edit business profiles');
+    Route::delete('business-profiles/{businessProfile}/users/{user}', [BusinessProfileController::class, 'removeUser'])
+        ->name('business-profiles.remove-user')
+        ->middleware('permission:edit business profiles');
 
     // Customers
     Route::resource('customers', CustomerController::class)->middleware('permission:view customers');
@@ -49,6 +61,15 @@ Route::middleware('auth')->group(function () {
     Route::post('invoices/{invoice}/submit-to-fbr', [InvoiceController::class, 'submitToFbr'])
         ->name('invoices.submit-to-fbr')
         ->middleware('permission:submit invoices to fbr');
+    Route::get('invoices/{invoice}/discard', [InvoiceController::class, 'discard'])
+        ->name('invoices.discard')
+        ->middleware('permission:edit invoices');
+    Route::post('invoices/{invoice}/discard', [InvoiceController::class, 'storeDiscard'])
+        ->name('invoices.store-discard')
+        ->middleware('permission:edit invoices');
+    Route::post('invoices/{invoice}/restore', [InvoiceController::class, 'restore'])
+        ->name('invoices.restore')
+        ->middleware('permission:edit invoices');
 
     // Reports
     Route::prefix('reports')->name('reports.')->middleware('permission:view reports')->group(function () {

@@ -25,10 +25,16 @@ class InvoiceController extends Controller
 
     public function index()
     {
-        $profileIds = auth()->user()->businessProfiles()->pluck('id');
+        // Get accessible business profile IDs
+        $ownedProfileIds = auth()->user()->businessProfiles()->pluck('id');
+        $accessibleProfileIds = auth()->user()->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
         $invoices = Invoice::whereIn('business_profile_id', $profileIds)
             ->with(['customer', 'businessProfile', 'invoiceItems'])
+            ->when(request('status'), function($query) {
+                $query->where('status', request('status'));
+            })
             ->when(request('status'), function($query) {
                 $query->where('fbr_status', request('status'));
             })
@@ -48,8 +54,12 @@ class InvoiceController extends Controller
 
     public function create()
     {
-        $profileIds = auth()->user()->businessProfiles()->pluck('id');
-        $businessProfiles = auth()->user()->businessProfiles;
+        // Get accessible business profile IDs
+        $ownedProfileIds = auth()->user()->businessProfiles()->pluck('id');
+        $accessibleProfileIds = auth()->user()->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        
+        $businessProfiles = BusinessProfile::whereIn('id', $profileIds)->get();
         $customers = Customer::whereIn('business_profile_id', $profileIds)
             ->with('businessProfile')
             ->orderBy('name')
@@ -82,8 +92,9 @@ class InvoiceController extends Controller
         ]);
 
         // Verify business profile and customer belong to user
-        $businessProfile = auth()->user()->businessProfiles()
-            ->findOrFail($validated['business_profile_id']);
+        if (!auth()->user()->hasBusinessProfileAccess($validated['business_profile_id'], 'create_invoices')) {
+            abort(403, 'You do not have permission to create invoices for this business profile.');
+        }
 
         $customer = Customer::where('business_profile_id', $validated['business_profile_id'])
             ->findOrFail($validated['customer_id']);
@@ -129,6 +140,7 @@ class InvoiceController extends Controller
                     'sales_tax' => $totalTax,
                     'total_amount' => $totalAmount,
                     'fbr_status' => 'pending',
+                    'status' => 'active',
                 ]);
 
                 // Create invoice items
@@ -323,6 +335,67 @@ class InvoiceController extends Controller
         return $this->pdfService->generatePdf($invoice);
     }
 
+    public function discard(Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        if ($invoice->status === 'discarded') {
+            return redirect()->back()->with('error', 'Invoice is already discarded.');
+        }
+
+        if ($invoice->fbr_status === 'submitted') {
+            return redirect()->back()->with('error', 'Cannot discard invoices that have been submitted to FBR.');
+        }
+
+        return view('invoices.discard', compact('invoice'));
+    }
+
+    public function storeDiscard(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        $validated = $request->validate([
+            'discard_reason' => 'required|string|max:500',
+        ]);
+
+        if ($invoice->status === 'discarded') {
+            return redirect()->route('invoices.index')->with('error', 'Invoice is already discarded.');
+        }
+
+        if ($invoice->fbr_status === 'submitted') {
+            return redirect()->route('invoices.index')->with('error', 'Cannot discard invoices that have been submitted to FBR.');
+        }
+
+        $invoice->update([
+            'status' => 'discarded',
+            'discard_reason' => $validated['discard_reason'],
+            'discarded_at' => now(),
+            'discarded_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('invoices.index')
+            ->with('success', 'Invoice discarded successfully.');
+    }
+
+    public function restore(Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        if ($invoice->status !== 'discarded') {
+            return redirect()->back()->with('error', 'Only discarded invoices can be restored.');
+        }
+
+        $invoice->update([
+            'status' => 'active',
+            'discard_reason' => null,
+            'discarded_at' => null,
+            'discarded_by' => null,
+        ]);
+
+        return redirect()->route('invoices.show', $invoice)
+            ->with('success', 'Invoice restored successfully.');
+    }
+
     public function submitToFbr(Invoice $invoice)
     {
         $this->authorize('update', $invoice);
@@ -345,9 +418,9 @@ class InvoiceController extends Controller
         $this->authorize('delete', $invoice);
 
         // Only allow deletion of pending or failed invoices
-        if (!in_array($invoice->fbr_status, ['pending', 'failed'])) {
+        if (!in_array($invoice->fbr_status, ['pending', 'failed']) || $invoice->status === 'discarded') {
             return redirect()->route('invoices.index')
-                ->with('error', 'Cannot delete invoices that have been submitted to FBR.');
+                ->with('error', 'Cannot delete invoices that have been submitted to FBR or are discarded.');
         }
 
         try {

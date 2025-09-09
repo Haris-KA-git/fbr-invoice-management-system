@@ -20,6 +20,9 @@
                         <a href="{{ route('business-profiles.edit', $businessProfile) }}" class="btn btn-primary btn-sm">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </a>
+                        <a href="{{ route('business-profiles.users', $businessProfile) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-people me-1"></i>Manage Users
+                        </a>
                     </div>
                 </div>
                 <div class="card-body">

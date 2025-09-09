@@ -19,6 +19,7 @@ class Invoice extends Model
         'fbr_invoice_number',
         'invoice_date',
         'invoice_type',
+        'status',
         'subtotal',
         'discount_amount',
         'sales_tax',
@@ -30,11 +31,15 @@ class Invoice extends Model
         'fbr_status',
         'fbr_response',
         'fbr_error_message',
+        'discard_reason',
+        'discarded_at',
+        'discarded_by',
         'qr_code',
     ];
 
     protected $casts = [
         'invoice_date' => 'date',
+        'discarded_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'sales_tax' => 'decimal:2',
@@ -68,5 +73,25 @@ class Invoice extends Model
     public function fbrQueue(): HasMany
     {
         return $this->hasMany(FbrQueue::class);
+    }
+
+    public function discardedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'discarded_by');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    public function scopeDiscarded($query)
+    {
+        return $query->where('status', 'discarded');
     }
 }

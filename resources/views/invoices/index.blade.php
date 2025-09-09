@@ -14,6 +14,21 @@
     <!-- Status Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-file-earmark text-info display-4"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="small text-muted">Draft</div>
+                            <div class="h4">{{ $invoices->where('status', 'draft')->count() }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card border-warning">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -63,11 +78,11 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
-                            <i class="bi bi-exclamation-circle text-danger display-4"></i>
+                            <i class="bi bi-archive text-secondary display-4"></i>
                         </div>
                         <div class="flex-grow-1 ms-3">
-                            <div class="small text-muted">Failed</div>
-                            <div class="h4">{{ $invoices->where('fbr_status', 'failed')->count() }}</div>
+                            <div class="small text-muted">Discarded</div>
+                            <div class="h4">{{ $invoices->where('status', 'discarded')->count() }}</div>
                         </div>
                     </div>
                 </div>
@@ -85,8 +100,16 @@
                 <div class="col-auto">
                     <div class="row g-2">
                         <div class="col-auto">
-                            <select class="form-select form-select-sm" id="statusFilter">
+                            <select class="form-select form-select-sm" id="invoiceStatusFilter">
                                 <option value="">All Status</option>
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="discarded">Discarded</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <select class="form-select form-select-sm" id="statusFilter">
+                                <option value="">All FBR Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="validated">Validated</option>
                                 <option value="submitted">Submitted</option>
@@ -109,6 +132,7 @@
                             <th>Customer</th>
                             <th>Date</th>
                             <th>Type</th>
+                            <th>Status</th>
                             <th>Items</th>
                             <th>Amount</th>
                             <th>FBR Status</th>
@@ -138,6 +162,22 @@
                                         {{ ucfirst(str_replace('_', ' ', $invoice->invoice_type)) }}
                                     </span>
                                 </td>
+                                <td>
+                                    @php
+                                        $statusColors = [
+                                            'draft' => 'secondary',
+                                            'active' => 'primary',
+                                            'discarded' => 'dark'
+                                        ];
+                                    @endphp
+                                    <span class="badge bg-{{ $statusColors[$invoice->status] ?? 'secondary' }}">
+                                        {{ ucfirst($invoice->status) }}
+                                    </span>
+                                    @if($invoice->status === 'discarded')
+                                        <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" 
+                                           title="Discarded: {{ $invoice->discard_reason }}"></i>
+                                    @endif
+                                </td>
                                 <td>{{ $invoice->invoiceItems->count() }} items</td>
                                 <td>₨{{ number_format($invoice->total_amount, 2) }}</td>
                                 <td>
@@ -162,7 +202,7 @@
                                         <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-outline-primary" title="View">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        @if(in_array($invoice->fbr_status, ['pending', 'failed']))
+                                        @if(in_array($invoice->fbr_status, ['pending', 'failed']) && $invoice->status !== 'discarded')
                                             <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-outline-secondary" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
@@ -170,11 +210,24 @@
                                         <a href="{{ route('invoices.download-pdf', $invoice) }}" class="btn btn-outline-secondary" title="Download PDF">
                                             <i class="bi bi-download"></i>
                                         </a>
-                                        @if($invoice->fbr_status === 'pending' || $invoice->fbr_status === 'failed')
+                                        @if($invoice->status === 'discarded')
+                                            <form method="POST" action="{{ route('invoices.restore', $invoice) }}" style="display: inline-block;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-success" title="Restore Invoice">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                            </form>
+                                        @elseif($invoice->fbr_status === 'pending' || $invoice->fbr_status === 'failed')
                                             <form method="POST" action="{{ route('invoices.submit-to-fbr', $invoice) }}" style="display: inline-block;">
                                                 @csrf
                                                 <button type="submit" class="btn btn-outline-success" title="Submit to FBR">
                                                     <i class="bi bi-upload"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('invoices.discard', $invoice) }}" style="display: inline-block;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-warning" title="Discard Invoice">
+                                                    <i class="bi bi-archive"></i>
                                                 </button>
                                             </form>
                                         @endif
@@ -183,7 +236,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="9" class="text-center py-4">
                                     <i class="bi bi-file-earmark-text display-1 text-muted mb-3"></i>
                                     <h4>No invoices found</h4>
                                     <p class="text-muted">Start by creating your first invoice</p>
@@ -215,22 +268,26 @@
 
         // Filter and search functionality
         document.getElementById('statusFilter').addEventListener('change', filterTable);
+        document.getElementById('invoiceStatusFilter').addEventListener('change', filterTable);
         document.getElementById('searchInput').addEventListener('keyup', filterTable);
 
         function filterTable() {
             const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+            const invoiceStatusFilter = document.getElementById('invoiceStatusFilter').value.toLowerCase();
             const searchFilter = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('tbody tr');
 
             rows.forEach(row => {
-                const status = row.cells[6].textContent.toLowerCase();
+                const fbrStatus = row.cells[7].textContent.toLowerCase();
+                const invoiceStatus = row.cells[4].textContent.toLowerCase();
                 const invoice = row.cells[0].textContent.toLowerCase();
                 const customer = row.cells[1].textContent.toLowerCase();
 
-                const statusMatch = !statusFilter || status.includes(statusFilter);
+                const fbrStatusMatch = !statusFilter || fbrStatus.includes(statusFilter);
+                const invoiceStatusMatch = !invoiceStatusFilter || invoiceStatus.includes(invoiceStatusFilter);
                 const searchMatch = !searchFilter || invoice.includes(searchFilter) || customer.includes(searchFilter);
 
-                row.style.display = statusMatch && searchMatch ? '' : 'none';
+                row.style.display = fbrStatusMatch && invoiceStatusMatch && searchMatch ? '' : 'none';
             });
         }
     </script>

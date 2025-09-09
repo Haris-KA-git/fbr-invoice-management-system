@@ -17,13 +17,20 @@
                         <i class="bi bi-pencil me-1"></i>Edit Invoice
                     </a>
                 @endif
-                @if($invoice->fbr_status === 'pending' || $invoice->fbr_status === 'failed')
+                @if($invoice->status === 'discarded')
+                    <form method="POST" action="{{ route('invoices.restore', $invoice) }}" style="display: inline-block;">
+                        @csrf
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Restore Invoice
                     <form method="POST" action="{{ route('invoices.submit-to-fbr', $invoice) }}" style="display: inline-block;">
                         @csrf
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-upload me-1"></i>Submit to FBR
                         </button>
                     </form>
+                    <a href="{{ route('invoices.discard', $invoice) }}" class="btn btn-outline-warning">
+                        <i class="bi bi-archive me-1"></i>Discard
+                    </a>
                 @endif
             </div>
         </div>
@@ -199,6 +206,27 @@
                     <h5 class="mb-0">FBR Status</h5>
                 </div>
                 <div class="card-body">
+                    @if($invoice->status === 'discarded')
+                        <div class="text-center mb-3">
+                            <i class="bi bi-archive display-1 text-secondary"></i>
+                            <h4 class="mt-2 text-secondary">Discarded</h4>
+                            <p class="text-muted">This invoice has been discarded</p>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <small><strong>Reason:</strong> {{ $invoice->discard_reason }}</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Discarded by:</small><br>
+                            <span>{{ $invoice->discardedBy->name ?? 'Unknown' }}</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Discarded on:</small><br>
+                            <span>{{ $invoice->discarded_at ? $invoice->discarded_at->format('M d, Y H:i') : 'Unknown' }}</span>
+                        </div>
+                    @else
                     @php
                         $statusColors = [
                             'pending' => 'warning',
@@ -230,6 +258,7 @@
                             <small><strong>Successfully submitted to FBR</strong></small>
                         </div>
                     @endif
+                    @endif
 
                     <div class="mb-3">
                         <small class="text-muted">Created:</small><br>
@@ -253,13 +282,23 @@
                             <i class="bi bi-download me-2"></i>Download PDF
                         </a>
                         
-                        @if($invoice->fbr_status === 'pending' || $invoice->fbr_status === 'failed')
+                        @if($invoice->status === 'discarded')
+                            <form method="POST" action="{{ route('invoices.restore', $invoice) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>Restore Invoice
+                                </button>
+                            </form>
+                        @elseif(in_array($invoice->fbr_status, ['pending', 'failed']) && $invoice->status !== 'discarded')
                             <form method="POST" action="{{ route('invoices.submit-to-fbr', $invoice) }}">
                                 @csrf
                                 <button type="submit" class="btn btn-success w-100">
                                     <i class="bi bi-upload me-2"></i>Submit to FBR
                                 </button>
                             </form>
+                            <a href="{{ route('invoices.discard', $invoice) }}" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-archive me-2"></i>Discard Invoice
+                            </a>
                         @endif
 
                         <a href="{{ route('customers.show', $invoice->customer) }}" class="btn btn-outline-secondary">

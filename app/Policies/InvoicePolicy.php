@@ -21,7 +21,8 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'view_invoices');
     }
 
     /**
@@ -37,7 +38,8 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'edit_invoices');
     }
 
     /**
@@ -45,7 +47,8 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'delete_invoices');
     }
 
     /**

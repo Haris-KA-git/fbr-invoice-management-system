@@ -21,7 +21,8 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($customer->business_profile_id, 'view_customers');
     }
 
     /**
@@ -37,7 +38,8 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers');
     }
 
     /**
@@ -45,7 +47,8 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists();
+        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
+               $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers');
     }
 
     /**

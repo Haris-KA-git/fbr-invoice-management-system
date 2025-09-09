@@ -54,4 +54,19 @@ class BusinessProfile extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot(['role', 'permissions', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function activeUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot(['role', 'permissions', 'is_active'])
+            ->wherePivot('is_active', true)
+            ->withTimestamps();
+    }
 }

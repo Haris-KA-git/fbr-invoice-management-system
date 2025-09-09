@@ -64,5 +64,37 @@ class BusinessProfileSeeder extends Seeder
                 'is_active' => true,
             ]);
         }
+
+        // Add demo users to business profiles with different roles
+        $demoProfile = BusinessProfile::where('business_name', 'Demo Trading Company')->first();
+        if ($demoProfile) {
+            $accountant = User::where('email', 'accountant@fbrvoice.com')->first();
+            $cashier = User::where('email', 'cashier@fbrvoice.com')->first();
+            $auditor = User::where('email', 'auditor@fbrvoice.com')->first();
+
+            if ($accountant) {
+                $demoProfile->users()->attach($accountant->id, [
+                    'role' => 'manager',
+                    'permissions' => json_encode(['view_invoices', 'create_invoices', 'edit_invoices', 'view_customers', 'create_customers', 'edit_customers', 'view_items', 'create_items', 'edit_items', 'view_reports']),
+                    'is_active' => true,
+                ]);
+            }
+
+            if ($cashier) {
+                $demoProfile->users()->attach($cashier->id, [
+                    'role' => 'editor',
+                    'permissions' => json_encode(['view_invoices', 'create_invoices', 'view_customers', 'create_customers', 'view_items']),
+                    'is_active' => true,
+                ]);
+            }
+
+            if ($auditor) {
+                $demoProfile->users()->attach($auditor->id, [
+                    'role' => 'viewer',
+                    'permissions' => json_encode(['view_invoices', 'view_customers', 'view_items', 'view_reports']),
+                    'is_active' => true,
+                ]);
+            }
+        }
     }
 }

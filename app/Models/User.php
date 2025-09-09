@@ -61,4 +61,37 @@ class User extends Authenticatable
     {
         return $this->hasMany(AuditLog::class);
     }
+
+    public function accessibleBusinessProfiles(): BelongsToMany
+    {
+        return $this->belongsToMany(BusinessProfile::class)
+            ->withPivot(['role', 'permissions', 'is_active'])
+            ->wherePivot('is_active', true)
+            ->withTimestamps();
+    }
+
+    public function allBusinessProfiles(): BelongsToMany
+    {
+        return $this->belongsToMany(BusinessProfile::class)
+            ->withPivot(['role', 'permissions', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function hasBusinessProfileAccess($businessProfileId, $permission = null): bool
+    {
+        $profile = $this->accessibleBusinessProfiles()
+            ->where('business_profile_id', $businessProfileId)
+            ->first();
+
+        if (!$profile) {
+            return false;
+        }
+
+        if (!$permission) {
+            return true;
+        }
+
+        $userPermissions = $profile->pivot->permissions ? json_decode($profile->pivot->permissions, true) : [];
+        return in_array($permission, $userPermissions) || $profile->pivot->role === 'owner';
+    }
 }
