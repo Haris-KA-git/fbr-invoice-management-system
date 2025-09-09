@@ -3,7 +3,13 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <h2 class="h3 mb-0">Business Profiles</h2>
-                <p class="text-muted mb-0">Manage your business entities and settings</p>
+                <p class="text-muted mb-0">
+                    @if(auth()->user()->hasRole('Admin'))
+                        Manage all business entities in the system
+                    @else
+                        Manage your business entities and settings
+                    @endif
+                </p>
             </div>
             <div>
                 @if(auth()->user()->canCreateBusinessProfile())
@@ -36,8 +42,16 @@
     <!-- Owned Business Profiles -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">My Business Profiles ({{ $ownedProfiles->count() }})</h5>
-            <span class="badge bg-primary">{{ $ownedProfiles->count() }}/{{ auth()->user()->business_profile_limit }} used</span>
+            <h5 class="mb-0">
+                @if(auth()->user()->hasRole('Admin'))
+                    All Business Profiles ({{ $ownedProfiles->count() }})
+                @else
+                    My Business Profiles ({{ $ownedProfiles->count() }})
+                @endif
+            </h5>
+            @if(!auth()->user()->hasRole('Admin'))
+                <span class="badge bg-primary">{{ $ownedProfiles->count() }}/{{ auth()->user()->business_profile_limit }} used</span>
+            @endif
         </div>
         <div class="card-body">
             <div class="row">
@@ -56,7 +70,13 @@
                                     @endif
                                     <div class="flex-grow-1">
                                         <h6 class="mb-0">{{ $profile->business_name }}</h6>
-                                        <small class="text-muted">Owner</small>
+                                        <small class="text-muted">
+                                            @if(auth()->user()->hasRole('Admin'))
+                                                Owner: {{ $profile->user->name }}
+                                            @else
+                                                Owner
+                                            @endif
+                                        </small>
                                     </div>
                                 </div>
 

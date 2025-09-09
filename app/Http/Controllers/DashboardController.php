@@ -14,9 +14,14 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        // Get accessible business profile IDs (owned + shared)
-        // Get accessible business profile IDs (owned + shared)
-        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+
+        // Admins can see all business profiles, others see only accessible ones
+        if ($user->hasRole('Admin')) {
+            $profileIds = BusinessProfile::pluck('id');
+        } else {
+            // Get accessible business profile IDs (owned + shared)
+            $profileIds = collect($user->getAccessibleBusinessProfileIds());
+        }
         $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
