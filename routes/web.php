@@ -1,53 +1,90 @@
 <?php
 
-namespace App\Http\Controllers;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuditLogController;
+use Illuminate\Support\Facades\Route;
 
-use App\Models\BusinessProfile;
-use App\Models\Customer;
-use App\Models\Invoice;
-use App\Models\Item;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
-class DashboardController extends Controller
-{
-    public function index()
-    {
-        $user = auth()->user();
-        
-        // Get accessible business profile IDs (owned + shared)
-        $ownedProfileIds = $user->businessProfiles()->pluck('id');
-        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
-        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
-        
-        if ($profileIds->isEmpty()) {
-            $stats = [
-                'customers' => 0,
-                'items' => 0,
-                'invoices' => 0,
-                'pending_invoices' => 0,
-                'total_amount' => 0,
-            ];
-            $monthlyData = collect();
-            $recentInvoices = collect();
-        } else {
-            $stats = [
-                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
-                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
-                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
-                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
-                    ->where('fbr_status', 'pending')
-                    ->where('status', '!=', 'discarded')
-                    ->count(),
-                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
-                    ->where('fbr_status', 'submitted')
-                    ->where('status', '!=', 'discarded')
-                    ->sum('total_amount'),
-            ];
+Route::get('/', function () {
+    return view('welcome');
+});
 
-            // Monthly invoice data for chart
-        }
+Route::middleware('auth')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
-    }
-}
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Business Profiles
+    Route::middleware('permission:view business profiles')->group(function () {
+        Route::resource('business-profiles', BusinessProfileController::class);
+        Route::get('business-profiles/{businessProfile}/users', [BusinessProfileController::class, 'users'])->name('business-profiles.users');
+        Route::post('business-profiles/{businessProfile}/users', [BusinessProfileController::class, 'addUser'])->name('business-profiles.add-user');
+        Route::put('business-profiles/{businessProfile}/users/{user}', [BusinessProfileController::class, 'updateUser'])->name('business-profiles.update-user');
+        Route::delete('business-profiles/{businessProfile}/users/{user}', [BusinessProfileController::class, 'removeUser'])->name('business-profiles.remove-user');
+    });
+
+    // Customers
+    Route::middleware('permission:view customers')->group(function () {
+        Route::resource('customers', CustomerController::class);
+    });
+
+    // Items
+    Route::middleware('permission:view items')->group(function () {
+        Route::resource('items', ItemController::class);
+    });
+
+    // Invoices
+    Route::middleware('permission:view invoices')->group(function () {
+        Route::resource('invoices', InvoiceController::class);
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.download-pdf');
+        Route::post('invoices/{invoice}/submit-fbr', [InvoiceController::class, 'submitToFbr'])->name('invoices.submit-fbr');
+        Route::get('invoices/{invoice}/discard', [InvoiceController::class, 'discard'])->name('invoices.discard');
+        Route::post('invoices/{invoice}/discard', [InvoiceController::class, 'storeDiscard'])->name('invoices.store-discard');
+        Route::post('invoices/{invoice}/restore', [InvoiceController::class, 'restore'])->name('invoices.restore');
+        Route::post('invoices/{invoice}/activate', [InvoiceController::class, 'activate'])->name('invoices.activate');
+    });
+
+    // Reports
+    Route::middleware('permission:view reports')->group(function () {
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
+        Route::get('reports/customers', [ReportController::class, 'customerReport'])->name('reports.customers');
+        Route::get('reports/items', [ReportController::class, 'itemReport'])->name('reports.items');
+        Route::get('reports/tax', [ReportController::class, 'taxReport'])->name('reports.tax');
+        Route::get('reports/export/sales', [ReportController::class, 'exportSales'])->name('reports.export.sales');
+    });
+
+    // User Management (Admin only)
+    Route::middleware('permission:manage users')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::get('users/roles/index', [UserController::class, 'roles'])->name('users.roles');
+        Route::get('users/roles/create', [UserController::class, 'createRole'])->name('users.create-role');
+        Route::post('users/roles', [UserController::class, 'storeRole'])->name('users.store-role');
+        Route::get('users/roles/{role}/edit', [UserController::class, 'editRole'])->name('users.edit-role');
+        Route::put('users/roles/{role}', [UserController::class, 'updateRole'])->name('users.update-role');
+        Route::delete('users/roles/{role}', [UserController::class, 'destroyRole'])->name('users.destroy-role');
+    });
+
+    // Audit Logs
+    Route::middleware('permission:view audit logs')->group(function () {
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    });
+});
+
+require __DIR__.'/auth.php';

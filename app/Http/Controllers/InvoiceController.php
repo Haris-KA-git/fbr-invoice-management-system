@@ -46,6 +46,69 @@ class DashboardController extends Controller
             ];
 
             // Monthly invoice data for chart
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'Only draft invoices can be activated.');
+        }
+
+        $invoice->update(['status' => 'active']);
+        
+        // Queue for FBR submission
+        app(FbrService::class)->queueInvoice($invoice);
+
+        return redirect()->route('invoices.show', $invoice)
+            ->with('success', 'Invoice activated and queued for FBR submission.');
+    }
+
+    public function discard(Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        if ($invoice->status === 'discarded') {
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'Invoice is already discarded.');
+        }
+
+        return view('invoices.discard', compact('invoice'));
+    }
+
+    public function storeDiscard(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        $validated = $request->validate([
+            'discard_reason' => 'required|string|max:1000',
+        ]);
+
+        $invoice->update([
+            'status' => 'discarded',
+            'discard_reason' => $validated['discard_reason'],
+            'discarded_at' => now(),
+            'discarded_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('invoices.index')
+            ->with('success', 'Invoice discarded successfully.');
+    }
+
+    public function restore(Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+        
+        if ($invoice->status !== 'discarded') {
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'Only discarded invoices can be restored.');
+        }
+
+        $invoice->update([
+            'status' => 'active',
+            'discard_reason' => null,
+            'discarded_at' => null,
+            'discarded_by' => null,
+        ]);
+
+        return redirect()->route('invoices.show', $invoice)
+            ->with('success', 'Invoice restored successfully.');
+    }
         }
 
         return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));

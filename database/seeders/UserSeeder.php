@@ -1,53 +1,71 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Database\Seeders;
 
-use App\Models\BusinessProfile;
-use App\Models\Customer;
-use App\Models\Invoice;
-use App\Models\Item;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
-class DashboardController extends Controller
+class UserSeeder extends Seeder
 {
-    public function index()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
-        $user = auth()->user();
-        
-        // Get accessible business profile IDs (owned + shared)
-        $ownedProfileIds = $user->businessProfiles()->pluck('id');
-        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
-        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
-        
-        if ($profileIds->isEmpty()) {
-            $stats = [
-                'customers' => 0,
-                'items' => 0,
-                'invoices' => 0,
-                'pending_invoices' => 0,
-                'total_amount' => 0,
-            ];
-            $monthlyData = collect();
-            $recentInvoices = collect();
-        } else {
-            $stats = [
-                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
-                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
-                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
-                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
-                    ->where('fbr_status', 'pending')
-                    ->where('status', '!=', 'discarded')
-                    ->count(),
-                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
-                    ->where('fbr_status', 'submitted')
-                    ->where('status', '!=', 'discarded')
-                    ->sum('total_amount'),
-            ];
+        // Admin user
+        $admin = User::firstOrCreate([
+            'email' => 'admin@fbrvoice.com',
+        ], [
+            'name' => 'System Administrator',
+            'password' => Hash::make('admin123'),
+            'business_profile_limit' => 10,
+            'is_active' => true,
+        ]);
+        $admin->assignRole('Admin');
 
-            // Monthly invoice data for chart
-        }
+        // Accountant user
+        $accountant = User::firstOrCreate([
+            'email' => 'accountant@fbrvoice.com',
+        ], [
+            'name' => 'Senior Accountant',
+            'password' => Hash::make('accountant123'),
+            'business_profile_limit' => 3,
+            'is_active' => true,
+        ]);
+        $accountant->assignRole('Accountant');
 
-        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
+        // Cashier user
+        $cashier = User::firstOrCreate([
+            'email' => 'cashier@fbrvoice.com',
+        ], [
+            'name' => 'Cashier User',
+            'password' => Hash::make('cashier123'),
+            'business_profile_limit' => 1,
+            'is_active' => true,
+        ]);
+        $cashier->assignRole('Cashier');
+
+        // Auditor user
+        $auditor = User::firstOrCreate([
+            'email' => 'auditor@fbrvoice.com',
+        ], [
+            'name' => 'System Auditor',
+            'password' => Hash::make('auditor123'),
+            'business_profile_limit' => 1,
+            'is_active' => true,
+        ]);
+        $auditor->assignRole('Auditor');
+
+        // Demo business user
+        $demo = User::firstOrCreate([
+            'email' => 'demo@business.com',
+        ], [
+            'name' => 'Demo Business Owner',
+            'password' => Hash::make('demo123'),
+            'business_profile_limit' => 5,
+            'is_active' => true,
+        ]);
+        $demo->assignRole('Accountant');
     }
 }
