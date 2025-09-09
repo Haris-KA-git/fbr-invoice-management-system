@@ -13,7 +13,7 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view invoices');
     }
 
     /**
@@ -21,8 +21,19 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'view_invoices');
+        // Admins can view all invoices
+        if ($user->hasRole('Admin')) {
+            return $user->can('view invoices');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $invoice->business_profile_id)->exists()) {
+            return $user->can('view invoices');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($invoice->business_profile_id, 'view_invoices') && 
+               $user->can('view invoices');
     }
 
     /**
@@ -30,7 +41,7 @@ class InvoicePolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create invoices');
     }
 
     /**
@@ -38,8 +49,19 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'edit_invoices');
+        // Admins can update all invoices
+        if ($user->hasRole('Admin')) {
+            return $user->can('edit invoices');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $invoice->business_profile_id)->exists()) {
+            return $user->can('edit invoices');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($invoice->business_profile_id, 'edit_invoices') && 
+               $user->can('edit invoices');
     }
 
     /**
@@ -47,8 +69,19 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $invoice): bool
     {
-        return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($invoice->business_profile_id, 'delete_invoices');
+        // Admins can delete all invoices
+        if ($user->hasRole('Admin')) {
+            return $user->can('delete invoices');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $invoice->business_profile_id)->exists()) {
+            return $user->can('delete invoices');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($invoice->business_profile_id, 'delete_invoices') && 
+               $user->can('delete invoices');
     }
 
     /**
@@ -56,6 +89,12 @@ class InvoicePolicy
      */
     public function restore(User $user, Invoice $invoice): bool
     {
+        // Admins can restore all invoices
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can restore invoices
         return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists();
     }
 
@@ -64,6 +103,12 @@ class InvoicePolicy
      */
     public function forceDelete(User $user, Invoice $invoice): bool
     {
+        // Admins can force delete all invoices
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can force delete invoices
         return $user->businessProfiles()->where('id', $invoice->business_profile_id)->exists();
     }
 }

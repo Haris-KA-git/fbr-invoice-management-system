@@ -13,7 +13,7 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view customers');
     }
 
     /**
@@ -21,8 +21,19 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($customer->business_profile_id, 'view_customers');
+        // Admins can view all customers
+        if ($user->hasRole('Admin')) {
+            return $user->can('view customers');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $customer->business_profile_id)->exists()) {
+            return $user->can('view customers');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($customer->business_profile_id, 'view_customers') && 
+               $user->can('view customers');
     }
 
     /**
@@ -30,7 +41,7 @@ class CustomerPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create customers');
     }
 
     /**
@@ -38,8 +49,19 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers');
+        // Admins can update all customers
+        if ($user->hasRole('Admin')) {
+            return $user->can('edit customers');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $customer->business_profile_id)->exists()) {
+            return $user->can('edit customers');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers') && 
+               $user->can('edit customers');
     }
 
     /**
@@ -47,8 +69,19 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists() ||
-               $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers');
+        // Admins can delete all customers
+        if ($user->hasRole('Admin')) {
+            return $user->can('delete customers');
+        }
+
+        // Check if user owns the business profile
+        if ($user->businessProfiles()->where('id', $customer->business_profile_id)->exists()) {
+            return $user->can('delete customers');
+        }
+
+        // Check if user has shared access to the business profile
+        return $user->hasBusinessProfileAccess($customer->business_profile_id, 'edit_customers') && 
+               $user->can('delete customers');
     }
 
     /**
@@ -56,6 +89,12 @@ class CustomerPolicy
      */
     public function restore(User $user, Customer $customer): bool
     {
+        // Admins can restore all customers
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can restore customers
         return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists();
     }
 
@@ -64,6 +103,12 @@ class CustomerPolicy
      */
     public function forceDelete(User $user, Customer $customer): bool
     {
+        // Admins can force delete all customers
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        // Only owners can force delete customers
         return $user->businessProfiles()->where('id', $customer->business_profile_id)->exists();
     }
 }
