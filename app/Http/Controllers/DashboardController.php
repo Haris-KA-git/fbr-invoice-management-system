@@ -54,17 +54,19 @@ class DashboardController extends Controller
                     ->sum('total_amount'),
             ];
 
-            // Monthly invoice data for chart
+            // Monthly invoice data for chart (last 12 months)
             $monthlyData = Invoice::whereIn('business_profile_id', $profileIds)
                 ->where('status', '!=', 'discarded')
                 ->select(
+                    DB::raw('YEAR(invoice_date) as year'),
                     DB::raw('MONTH(invoice_date) as month'),
                     DB::raw('COUNT(*) as count'),
                     DB::raw('SUM(total_amount) as total')
                 )
-                ->whereYear('invoice_date', date('Y'))
-                ->groupBy('month')
-                ->orderBy('month')
+                ->where('invoice_date', '>=', now()->subMonths(12))
+                ->groupBy('year', 'month')
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
                 ->get();
 
             // Recent invoices

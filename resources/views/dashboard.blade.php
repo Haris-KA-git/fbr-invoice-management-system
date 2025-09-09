@@ -13,6 +13,11 @@
             <strong>Profile Limit Reached:</strong> You have used all {{ auth()->user()->business_profile_limit }} of your allowed business profiles. 
             Contact an administrator to increase your limit.
         </div>
+    @elseif(auth()->user()->getRemainingBusinessProfiles() <= 1)
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Profile Limit Notice:</strong> You have {{ auth()->user()->getRemainingBusinessProfiles() }} business profile(s) remaining out of {{ auth()->user()->business_profile_limit }}.
+        </div>
     @endif
 
     <!-- Stats Cards -->
@@ -127,11 +132,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span>Draft Invoices</span>
-                        <span class="badge bg-secondary">{{ $stats['draft_invoices'] ?? 0 }}</span>
+                        <span class="badge bg-secondary">{{ $stats['draft_invoices'] }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span>Active Invoices</span>
-                        <span class="badge bg-primary">{{ $stats['active_invoices'] ?? 0 }}</span>
+                        <span class="badge bg-primary">{{ $stats['active_invoices'] }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span>Pending FBR</span>
@@ -139,7 +144,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span>Submitted to FBR</span>
-                        <span class="badge bg-success">{{ $stats['submitted_invoices'] ?? 0 }}</span>
+                        <span class="badge bg-success">{{ $stats['submitted_invoices'] }}</span>
                     </div>
                 </div>
             </div>
@@ -218,6 +223,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Monthly Chart -->
+            @if($monthlyData->isNotEmpty())
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Monthly Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -230,35 +247,37 @@
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: {!! json_encode($monthlyData->pluck('month')->map(function($month) { return date('M', mktime(0, 0, 0, $month, 1)); })) !!},
+                        labels: {!! json_encode($monthlyData->map(function($item) { 
+                            return date('M Y', mktime(0, 0, 0, $item->month, 1, $item->year)); 
+                        })) !!},
                         datasets: [{
                             label: 'Invoice Count',
                             data: {!! json_encode($monthlyData->pluck('count')) !!},
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
-                        }, {
-                            label: 'Total Amount',
-                            data: {!! json_encode($monthlyData->pluck('total')) !!},
-                            borderColor: 'rgb(255, 99, 132)',
-                            tension: 0.1,
-                            yAxisID: 'y1'
+                            borderColor: 'rgb(102, 126, 234)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
                         scales: {
                             y: {
-                                type: 'linear',
-                                display: true,
-                                position: 'left',
-                            },
-                            y1: {
-                                type: 'linear',
-                                display: true,
-                                position: 'right',
+                                beginAtZero: true,
                                 grid: {
-                                    drawOnChartArea: false,
-                                },
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
                             }
                         }
                     }
