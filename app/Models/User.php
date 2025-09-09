@@ -1,93 +1,55 @@
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
+use App\Models\BusinessProfile;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
-class User extends Authenticatable
+class DashboardController extends Controller
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
-
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'is_active',
-        'business_profile_limit',
-    ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'is_active' => 'boolean',
-        'business_profile_limit' => 'integer',
-    ];
-
-    public function businessProfiles(): HasMany
+    public function index()
     {
-        return $this->hasMany(BusinessProfile::class);
-    }
-
-    public function accessibleBusinessProfiles(): BelongsToMany
-    {
-        return $this->belongsToMany(BusinessProfile::class)
-            ->withPivot(['role', 'permissions', 'is_active'])
-            ->wherePivot('is_active', true)
-            ->withTimestamps();
-    }
-
-    public function allAccessibleBusinessProfiles()
-    {
-        $owned = $this->businessProfiles;
-        $shared = $this->accessibleBusinessProfiles;
+        $user = auth()->user();
+        // Get accessible business profile IDs (owned + shared)
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
-        return $owned->merge($shared)->unique('id');
-    }
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'draft_invoices' => 0,
+                'active_invoices' => 0,
+                'pending_invoices' => 0,
+                'submitted_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-    public function hasBusinessProfileAccess($businessProfileId, $permission = null)
-    {
-        // Check if user owns the business profile
-        if ($this->businessProfiles()->where('id', $businessProfileId)->exists()) {
-            return true;
-        }
-
-        // Check if user has shared access
-        $access = $this->accessibleBusinessProfiles()
-            ->where('business_profiles.id', $businessProfileId)
-            ->first();
-
-        if (!$access) {
-            return false;
-        }
-
-        // If no specific permission required, just check if user has access
-        if (!$permission) {
-            return true;
-        }
-
-        // Check specific permission
-        $permissions = $access->pivot->permissions ? json_decode($access->pivot->permissions, true) : [];
-        return in_array($permission, $permissions);
-    }
-
-    public function canCreateBusinessProfile(): bool
-    {
-        return $this->businessProfiles()->count() < $this->business_profile_limit;
-    }
-
-    public function getRemainingBusinessProfiles(): int
-    {
-        return max(0, $this->business_profile_limit - $this->businessProfiles()->count());
+            // Monthly invoice data for chart
     }
 }
