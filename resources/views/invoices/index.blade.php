@@ -162,6 +162,11 @@
                                         <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-outline-primary" title="View">
                                             <i class="bi bi-eye"></i>
                                         </a>
+                                        @if(in_array($invoice->fbr_status, ['pending', 'failed']))
+                                            <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        @endif
                                         <a href="{{ route('invoices.download-pdf', $invoice) }}" class="btn btn-outline-secondary" title="Download PDF">
                                             <i class="bi bi-download"></i>
                                         </a>

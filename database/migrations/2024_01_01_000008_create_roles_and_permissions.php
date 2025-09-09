@@ -3,8 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 
 return new class extends Migration
 {
@@ -13,93 +11,66 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create permissions
-        $permissions = [
-            // Business Profile permissions
-            'view business profiles',
-            'create business profiles',
-            'edit business profiles',
-            'delete business profiles',
-            
-            // Customer permissions
-            'view customers',
-            'create customers',
-            'edit customers',
-            'delete customers',
-            
-            // Item permissions
-            'view items',
-            'create items',
-            'edit items',
-            'delete items',
-            
-            // Invoice permissions
-            'view invoices',
-            'create invoices',
-            'edit invoices',
-            'delete invoices',
-            'submit invoices to fbr',
-            'download invoice pdfs',
-            
-            // Report permissions
-            'view reports',
-            'export reports',
-            
-            // System permissions
-            'view audit logs',
-            'manage users',
-            'manage roles',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+        // The roles and permissions tables are created by Spatie package
+        // This migration just ensures they exist and creates initial data
+        
+        // Check if tables exist (they should be created by package migration)
+        if (!Schema::hasTable('permissions')) {
+            Schema::create('permissions', function (Blueprint $table) {
+                $table->bigIncrements('id');
+                $table->string('name');
+                $table->string('guard_name');
+                $table->timestamps();
+                
+                $table->unique(['name', 'guard_name']);
+            });
         }
 
-        // Create roles and assign permissions
-        $adminRole = Role::create(['name' => 'Admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        if (!Schema::hasTable('roles')) {
+            Schema::create('roles', function (Blueprint $table) {
+                $table->bigIncrements('id');
+                $table->string('name');
+                $table->string('guard_name');
+                $table->timestamps();
+                
+                $table->unique(['name', 'guard_name']);
+            });
+        }
 
-        $accountantRole = Role::create(['name' => 'Accountant']);
-        $accountantRole->givePermissionTo([
-            'view business profiles',
-            'create business profiles',
-            'edit business profiles',
-            'view customers',
-            'create customers',
-            'edit customers',
-            'view items',
-            'create items',
-            'edit items',
-            'view invoices',
-            'create invoices',
-            'edit invoices',
-            'submit invoices to fbr',
-            'download invoice pdfs',
-            'view reports',
-            'export reports',
-        ]);
+        if (!Schema::hasTable('model_has_permissions')) {
+            Schema::create('model_has_permissions', function (Blueprint $table) {
+                $table->unsignedBigInteger('permission_id');
+                $table->string('model_type');
+                $table->unsignedBigInteger('model_id');
+                
+                $table->index(['model_id', 'model_type']);
+                $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
+                $table->primary(['permission_id', 'model_id', 'model_type']);
+            });
+        }
 
-        $cashierRole = Role::create(['name' => 'Cashier']);
-        $cashierRole->givePermissionTo([
-            'view business profiles',
-            'view customers',
-            'create customers',
-            'view items',
-            'view invoices',
-            'create invoices',
-            'download invoice pdfs',
-        ]);
+        if (!Schema::hasTable('model_has_roles')) {
+            Schema::create('model_has_roles', function (Blueprint $table) {
+                $table->unsignedBigInteger('role_id');
+                $table->string('model_type');
+                $table->unsignedBigInteger('model_id');
+                
+                $table->index(['model_id', 'model_type']);
+                $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+                $table->primary(['role_id', 'model_id', 'model_type']);
+            });
+        }
 
-        $auditorRole = Role::create(['name' => 'Auditor']);
-        $auditorRole->givePermissionTo([
-            'view business profiles',
-            'view customers',
-            'view items',
-            'view invoices',
-            'view reports',
-            'export reports',
-            'view audit logs',
-        ]);
+        if (!Schema::hasTable('role_has_permissions')) {
+            Schema::create('role_has_permissions', function (Blueprint $table) {
+                $table->unsignedBigInteger('permission_id');
+                $table->unsignedBigInteger('role_id');
+                
+                $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
+                $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+                $table->primary(['permission_id', 'role_id']);
+            });
+        }
     }
 
     /**
@@ -107,8 +78,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Delete all permissions and roles
-        Permission::query()->delete();
-        Role::query()->delete();
+        Schema::dropIfExists('role_has_permissions');
+        Schema::dropIfExists('model_has_roles');
+        Schema::dropIfExists('model_has_permissions');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('permissions');
     }
 };

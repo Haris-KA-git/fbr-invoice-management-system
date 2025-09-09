@@ -19,6 +19,17 @@ class DashboardController extends Controller
         // Get stats for user's business profiles
         $profileIds = $user->businessProfiles()->pluck('id');
         
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
         $stats = [
             'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
             'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
@@ -48,6 +59,7 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
+        }
 
         return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }

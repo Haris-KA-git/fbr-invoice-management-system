@@ -12,6 +12,11 @@
                 <a href="{{ route('invoices.download-pdf', $invoice) }}" class="btn btn-outline-primary">
                     <i class="bi bi-download me-1"></i>Download PDF
                 </a>
+                @if(in_array($invoice->fbr_status, ['pending', 'failed']))
+                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Edit Invoice
+                    </a>
+                @endif
                 @if($invoice->fbr_status === 'pending' || $invoice->fbr_status === 'failed')
                     <form method="POST" action="{{ route('invoices.submit-to-fbr', $invoice) }}" style="display: inline-block;">
                         @csrf

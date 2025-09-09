@@ -10,6 +10,11 @@ use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:manage users');
+    }
+
     public function index()
     {
         $users = User::with('roles')
@@ -101,7 +106,7 @@ class UserController extends Controller
             'is_active' => $request->has('is_active'),
         ];
 
-        if ($validated['password']) {
+        if (!empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);
         }
 
@@ -134,6 +139,8 @@ class UserController extends Controller
 
     public function roles()
     {
+        $this->middleware('permission:manage roles');
+        
         $roles = Role::with('permissions')->get();
         $permissions = Permission::all()->groupBy(function($permission) {
             return explode(' ', $permission->name)[1] ?? 'general';
@@ -144,6 +151,8 @@ class UserController extends Controller
 
     public function createRole()
     {
+        $this->middleware('permission:manage roles');
+        
         $permissions = Permission::all()->groupBy(function($permission) {
             return explode(' ', $permission->name)[1] ?? 'general';
         });
@@ -153,6 +162,8 @@ class UserController extends Controller
 
     public function storeRole(Request $request)
     {
+        $this->middleware('permission:manage roles');
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles',
             'permissions' => 'required|array|min:1',
@@ -168,6 +179,8 @@ class UserController extends Controller
 
     public function editRole(Role $role)
     {
+        $this->middleware('permission:manage roles');
+        
         $permissions = Permission::all()->groupBy(function($permission) {
             return explode(' ', $permission->name)[1] ?? 'general';
         });
@@ -179,6 +192,8 @@ class UserController extends Controller
 
     public function updateRole(Request $request, Role $role)
     {
+        $this->middleware('permission:manage roles');
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
             'permissions' => 'required|array|min:1',
@@ -194,6 +209,8 @@ class UserController extends Controller
 
     public function destroyRole(Role $role)
     {
+        $this->middleware('permission:manage roles');
+        
         // Prevent deleting roles that are assigned to users
         if ($role->users()->count() > 0) {
             return redirect()->route('users.roles')
