@@ -40,6 +40,11 @@ class BusinessProfilePolicy
      */
     public function create(User $user): bool
     {
+        // Admins can always create business profiles
+        if ($user->hasRole('Admin')) {
+            return $user->can('create business profiles');
+        }
+
         return $user->can('create business profiles') && $user->canCreateBusinessProfile();
     }
 
@@ -50,11 +55,11 @@ class BusinessProfilePolicy
     {
         // Admins can update all business profiles
         if ($user->hasRole('Admin')) {
-            return true;
+            return $user->can('edit business profiles');
         }
 
         // Only owners can update business profiles
-        return $user->id === $businessProfile->user_id;
+        return $user->id === $businessProfile->user_id && $user->can('edit business profiles');
     }
 
     /**
@@ -64,11 +69,11 @@ class BusinessProfilePolicy
     {
         // Admins can delete any business profile
         if ($user->hasRole('Admin')) {
-            return true;
+            return $user->can('delete business profiles');
         }
 
         // Only owners can delete business profiles
-        return $user->id === $businessProfile->user_id;
+        return $user->id === $businessProfile->user_id && $user->can('delete business profiles');
     }
 
     /**

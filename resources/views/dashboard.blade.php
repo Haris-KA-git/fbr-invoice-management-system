@@ -6,18 +6,20 @@
         </div>
     </x-slot>
 
-    <!-- Profile Limit Warning -->
-    @if(!auth()->user()->canCreateBusinessProfile())
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Profile Limit Reached:</strong> You have used all {{ auth()->user()->business_profile_limit }} of your allowed business profiles. 
-            Contact an administrator to increase your limit.
-        </div>
-    @elseif(auth()->user()->getRemainingBusinessProfiles() <= 1)
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Profile Limit Notice:</strong> You have {{ auth()->user()->getRemainingBusinessProfiles() }} business profile(s) remaining out of {{ auth()->user()->business_profile_limit }}.
-        </div>
+    <!-- Profile Limit Warning (Only for non-admins) -->
+    @if(!auth()->user()->hasRole('Admin'))
+        @if(!auth()->user()->canCreateBusinessProfile())
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Profile Limit Reached:</strong> You have used all {{ auth()->user()->business_profile_limit }} of your allowed business profiles. 
+                Contact an administrator to increase your limit.
+            </div>
+        @elseif(auth()->user()->getRemainingBusinessProfiles() <= 1)
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Profile Limit Notice:</strong> You have {{ auth()->user()->getRemainingBusinessProfiles() }} business profile(s) remaining out of {{ auth()->user()->business_profile_limit }}.
+            </div>
+        @endif
     @endif
 
     <!-- Stats Cards -->
@@ -87,69 +89,108 @@
         </div>
     </div>
 
-    <!-- Business Profile Usage -->
-    <div class="row mb-4">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Business Profile Usage</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Owned Profiles</span>
-                        <span class="badge bg-primary">{{ auth()->user()->businessProfiles()->count() }}</span>
+    <!-- Business Profile Usage (Only for non-admins) -->
+    @if(!auth()->user()->hasRole('Admin'))
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Business Profile Usage</h5>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Shared Profiles</span>
-                        <span class="badge bg-info">{{ auth()->user()->accessibleBusinessProfiles()->count() }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Profile Limit</span>
-                        <span class="badge bg-secondary">{{ auth()->user()->business_profile_limit }}</span>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span><strong>Remaining</strong></span>
-                        <span class="badge bg-success">{{ auth()->user()->getRemainingBusinessProfiles() }}</span>
-                    </div>
-                    
-                    <div class="progress mt-3" style="height: 10px;">
-                        @php
-                            $percentage = (auth()->user()->businessProfiles()->count() / auth()->user()->business_profile_limit) * 100;
-                        @endphp
-                        <div class="progress-bar {{ $percentage >= 100 ? 'bg-danger' : ($percentage >= 80 ? 'bg-warning' : 'bg-success') }}" 
-                             style="width: {{ min(100, $percentage) }}%"></div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Owned Profiles</span>
+                            <span class="badge bg-primary">{{ auth()->user()->businessProfiles()->count() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Shared Profiles</span>
+                            <span class="badge bg-info">{{ auth()->user()->accessibleBusinessProfiles()->count() }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Profile Limit</span>
+                            <span class="badge bg-secondary">{{ auth()->user()->business_profile_limit }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><strong>Remaining</strong></span>
+                            <span class="badge bg-success">{{ auth()->user()->getRemainingBusinessProfiles() }}</span>
+                        </div>
+                        
+                        <div class="progress mt-3" style="height: 10px;">
+                            @php
+                                $percentage = (auth()->user()->businessProfiles()->count() / auth()->user()->business_profile_limit) * 100;
+                            @endphp
+                            <div class="progress-bar {{ $percentage >= 100 ? 'bg-danger' : ($percentage >= 80 ? 'bg-warning' : 'bg-success') }}" 
+                                 style="width: {{ min(100, $percentage) }}%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Invoice Status Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Draft Invoices</span>
-                        <span class="badge bg-secondary">{{ $stats['draft_invoices'] }}</span>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Invoice Status Summary</h5>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Active Invoices</span>
-                        <span class="badge bg-primary">{{ $stats['active_invoices'] }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Pending FBR</span>
-                        <span class="badge bg-warning">{{ $stats['pending_invoices'] }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>Submitted to FBR</span>
-                        <span class="badge bg-success">{{ $stats['submitted_invoices'] }}</span>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Draft Invoices</span>
+                            <span class="badge bg-secondary">{{ $stats['draft_invoices'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Active Invoices</span>
+                            <span class="badge bg-primary">{{ $stats['active_invoices'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Pending FBR</span>
+                            <span class="badge bg-warning">{{ $stats['pending_invoices'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Submitted to FBR</span>
+                            <span class="badge bg-success">{{ $stats['submitted_invoices'] }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    @else
+        <!-- Admin System Overview -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">System Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="border-end">
+                                    <h3 class="text-primary mb-1">{{ \App\Models\BusinessProfile::count() }}</h3>
+                                    <p class="text-muted mb-0">Business Profiles</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border-end">
+                                    <h3 class="text-success mb-1">{{ \App\Models\User::count() }}</h3>
+                                    <p class="text-muted mb-0">Total Users</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border-end">
+                                    <h3 class="text-info mb-1">{{ $stats['invoices'] }}</h3>
+                                    <p class="text-muted mb-0">Total Invoices</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <h3 class="text-warning mb-1">₨{{ number_format($stats['total_amount'], 0) }}</h3>
+                                <p class="text-muted mb-0">System Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Recent Activity -->
     <div class="row">
@@ -215,7 +256,7 @@
                                 <i class="bi bi-box me-2"></i>Add Item
                             </a>
                         @endcan
-                        @if(auth()->user()->canCreateBusinessProfile())
+                        @if(auth()->user()->hasRole('Admin') || auth()->user()->canCreateBusinessProfile())
                             <a href="{{ route('business-profiles.create') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-building me-2"></i>Add Business Profile
                             </a>

@@ -15,16 +15,14 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Admins can see all business profiles, others see only accessible ones
+        // Get accessible business profile IDs
         if ($user->hasRole('Admin')) {
-            $profileIds = BusinessProfile::pluck('id');
+            $profileIds = BusinessProfile::pluck('id')->toArray();
         } else {
-            // Get accessible business profile IDs (owned + shared)
-            $profileIds = collect($user->getAccessibleBusinessProfileIds());
-        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
-        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+            $profileIds = $user->getAccessibleBusinessProfileIds();
+        }
         
-        if ($profileIds->isEmpty()) {
+        if (empty($profileIds)) {
             $stats = [
                 'customers' => 0,
                 'items' => 0,
@@ -42,8 +40,14 @@ class DashboardController extends Controller
                 'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
                 'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
                 'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'draft_invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', 'draft')->count(),
+                'active_invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', 'active')->count(),
                 'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
                     ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'submitted_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
                     ->where('status', '!=', 'discarded')
                     ->count(),
                 'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)

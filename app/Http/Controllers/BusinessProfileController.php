@@ -27,8 +27,8 @@ class BusinessProfileController extends Controller
 
     public function create()
     {
-        // Check if user can create more profiles
-        if (!auth()->user()->canCreateBusinessProfile()) {
+        // Check if user can create more profiles (not applicable to admins)
+        if (!auth()->user()->hasRole('Admin') && !auth()->user()->canCreateBusinessProfile()) {
             return redirect()->route('business-profiles.index')
                 ->with('error', 'You have reached your business profile limit.');
         }
@@ -38,8 +38,8 @@ class BusinessProfileController extends Controller
 
     public function store(Request $request)
     {
-        // Check if user can create more profiles
-        if (!auth()->user()->canCreateBusinessProfile()) {
+        // Check if user can create more profiles (not applicable to admins)
+        if (!auth()->user()->hasRole('Admin') && !auth()->user()->canCreateBusinessProfile()) {
             return redirect()->route('business-profiles.index')
                 ->with('error', 'You have reached your business profile limit.');
         }

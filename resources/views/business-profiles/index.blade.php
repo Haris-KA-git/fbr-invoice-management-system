@@ -12,7 +12,7 @@
                 </p>
             </div>
             <div>
-                @if(auth()->user()->canCreateBusinessProfile())
+                @if(auth()->user()->hasRole('Admin') || auth()->user()->canCreateBusinessProfile())
                     <a href="{{ route('business-profiles.create') }}" class="btn btn-primary">
                         <i class="bi bi-plus-circle me-2"></i>Add Business Profile
                     </a>
@@ -25,21 +25,23 @@
         </div>
     </x-slot>
 
-    <!-- Profile Limit Alert -->
-    @if(!auth()->user()->canCreateBusinessProfile())
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Profile Limit Reached:</strong> You have used all {{ auth()->user()->business_profile_limit }} of your allowed business profiles. 
-            Contact an administrator to increase your limit.
-        </div>
-    @elseif(auth()->user()->getRemainingBusinessProfiles() <= 1)
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Profile Limit Notice:</strong> You have {{ auth()->user()->getRemainingBusinessProfiles() }} business profile(s) remaining out of {{ auth()->user()->business_profile_limit }}.
-        </div>
+    <!-- Profile Limit Alert (Only for non-admins) -->
+    @if(!auth()->user()->hasRole('Admin'))
+        @if(!auth()->user()->canCreateBusinessProfile())
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Profile Limit Reached:</strong> You have used all {{ auth()->user()->business_profile_limit }} of your allowed business profiles. 
+                Contact an administrator to increase your limit.
+            </div>
+        @elseif(auth()->user()->getRemainingBusinessProfiles() <= 1)
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Profile Limit Notice:</strong> You have {{ auth()->user()->getRemainingBusinessProfiles() }} business profile(s) remaining out of {{ auth()->user()->business_profile_limit }}.
+            </div>
+        @endif
     @endif
 
-    <!-- Owned Business Profiles -->
+    <!-- Business Profiles -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
@@ -117,8 +119,14 @@
                         <div class="text-center py-4">
                             <i class="bi bi-building display-1 text-muted mb-3"></i>
                             <h4>No business profiles found</h4>
-                            <p class="text-muted">Create your first business profile to get started</p>
-                            @if(auth()->user()->canCreateBusinessProfile())
+                            <p class="text-muted">
+                                @if(auth()->user()->hasRole('Admin'))
+                                    No business profiles exist in the system yet
+                                @else
+                                    Create your first business profile to get started
+                                @endif
+                            </p>
+                            @if(auth()->user()->hasRole('Admin') || auth()->user()->canCreateBusinessProfile())
                                 <a href="{{ route('business-profiles.create') }}" class="btn btn-primary">
                                     <i class="bi bi-plus-circle me-2"></i>Create Business Profile
                                 </a>
@@ -130,8 +138,8 @@
         </div>
     </div>
 
-    <!-- Shared Business Profiles -->
-    @if($sharedProfiles->isNotEmpty())
+    <!-- Shared Business Profiles (Only for non-admins) -->
+    @if(!auth()->user()->hasRole('Admin') && $sharedProfiles->isNotEmpty())
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Shared Business Profiles ({{ $sharedProfiles->count() }})</h5>
