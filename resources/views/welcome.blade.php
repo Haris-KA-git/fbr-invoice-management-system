@@ -13,14 +13,75 @@
         .hero-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s ease-in-out infinite;
+            z-index: 0;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
         }
         
         .feature-card {
             transition: transform 0.3s ease;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         
         .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .navbar {
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn {
+            border-radius: 12px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .demo-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            background: white;
         }
     </style>
 </head>
@@ -49,7 +110,7 @@
 
     <!-- Hero Section -->
     <section class="hero-section d-flex align-items-center text-white">
-        <div class="container">
+        <div class="container hero-content">
             <div class="row align-items-center">
                 <div class="col-lg-6">
                     <h1 class="display-4 fw-bold mb-4">Complete FBR Digital Invoicing Solution</h1>
@@ -173,8 +234,8 @@
             
             <div class="row g-4">
                 <div class="col-md-6 col-lg-3">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white text-center">
+                    <div class="card demo-card border-primary" onclick="fillDemoCredentials('admin@fbrvoice.com', 'admin123')">
+                        <div class="card-header bg-primary text-white text-center" style="border-radius: 16px 16px 0 0;">
                             <h6 class="mb-0">Admin Account</h6>
                         </div>
                         <div class="card-body text-center">
@@ -186,8 +247,8 @@
                 </div>
                 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white text-center">
+                    <div class="card demo-card border-success" onclick="fillDemoCredentials('accountant@fbrvoice.com', 'accountant123')">
+                        <div class="card-header bg-success text-white text-center" style="border-radius: 16px 16px 0 0;">
                             <h6 class="mb-0">Accountant</h6>
                         </div>
                         <div class="card-body text-center">
@@ -199,8 +260,8 @@
                 </div>
                 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card border-warning">
-                        <div class="card-header bg-warning text-dark text-center">
+                    <div class="card demo-card border-warning" onclick="fillDemoCredentials('cashier@fbrvoice.com', 'cashier123')">
+                        <div class="card-header bg-warning text-dark text-center" style="border-radius: 16px 16px 0 0;">
                             <h6 class="mb-0">Cashier</h6>
                         </div>
                         <div class="card-body text-center">
@@ -212,8 +273,8 @@
                 </div>
                 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white text-center">
+                    <div class="card demo-card border-info" onclick="fillDemoCredentials('demo@business.com', 'demo123')">
+                        <div class="card-header bg-info text-white text-center" style="border-radius: 16px 16px 0 0;">
                             <h6 class="mb-0">Demo Business</h6>
                         </div>
                         <div class="card-body text-center">
@@ -226,9 +287,12 @@
             </div>
             
             <div class="text-center mt-4">
-                <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
+                <a href="{{ route('login') }}" class="btn btn-light btn-lg">
                     <i class="bi bi-box-arrow-in-right me-2"></i>Login Now
                 </a>
+                <p class="text-white-50 mt-3">
+                    <i class="bi bi-info-circle me-1"></i>Click any demo card above to auto-fill login credentials
+                </p>
             </div>
         </div>
     </section>
@@ -250,5 +314,16 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function fillDemoCredentials(email, password) {
+            // Store credentials in session storage for the login page
+            sessionStorage.setItem('demo_email', email);
+            sessionStorage.setItem('demo_password', password);
+            
+            // Redirect to login page
+            window.location.href = '{{ route("login") }}';
+        }
+    </script>
 </body>
 </html>

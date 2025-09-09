@@ -1,117 +1,125 @@
 <x-guest-layout>
-    <div class="container-fluid vh-100">
-        <div class="row h-100">
-            <!-- Left Side - Branding -->
-            <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="text-center text-white">
-                    <div class="mb-4">
-                        <i class="bi bi-file-earmark-text display-1"></i>
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to your FBR Invoice System account</p>
+        </div>
+
+        <!-- Session Status -->
+        <x-auth-session-status class="mb-4" :status="session('status')" />
+
+        <form method="POST" action="{{ route('login') }}" novalidate>
+            @csrf
+
+            <!-- Email Address -->
+            <div class="form-floating">
+                <input type="email" 
+                       class="form-control @error('email') is-invalid @enderror" 
+                       id="email" 
+                       name="email" 
+                       value="{{ old('email') }}" 
+                       placeholder="name@example.com"
+                       required 
+                       autofocus>
+                <label for="email">Email Address</label>
+                @error('email')
+                    <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                     </div>
-                    <h1 class="display-4 fw-bold mb-3">FBR Invoice System</h1>
-                    <p class="lead mb-4">Complete Digital Invoicing Solution for Pakistan</p>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <i class="bi bi-shield-check display-6 mb-2"></i>
-                            <p class="small">FBR Compliant</p>
-                        </div>
-                        <div class="col-4">
-                            <i class="bi bi-cloud-upload display-6 mb-2"></i>
-                            <p class="small">Real-time Sync</p>
-                        </div>
-                        <div class="col-4">
-                            <i class="bi bi-graph-up display-6 mb-2"></i>
-                            <p class="small">Smart Reports</p>
-                        </div>
+                @enderror
+            </div>
+
+            <!-- Password -->
+            <div class="form-floating">
+                <input type="password" 
+                       class="form-control @error('password') is-invalid @enderror" 
+                       id="password" 
+                       name="password" 
+                       placeholder="Password"
+                       required>
+                <label for="password">Password</label>
+                @error('password')
+                    <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                    </div>
+                @enderror
+            </div>
+
+            <!-- Remember Me & Forgot Password -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="remember_me" name="remember">
+                    <label class="form-check-label" for="remember_me">
+                        Remember me
+                    </label>
+                </div>
+                
+                @if (Route::has('password.request'))
+                    <a class="auth-link" href="{{ route('password.request') }}">
+                        Forgot password?
+                    </a>
+                @endif
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-auth">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                Sign In
+            </button>
+
+            <!-- Register Link -->
+            @if (Route::has('register'))
+                <div class="text-center mt-4">
+                    <span class="text-muted">Don't have an account?</span>
+                    <a href="{{ route('register') }}" class="auth-link ms-1">Create one</a>
+                </div>
+            @endif
+        </form>
+
+        <!-- Demo Accounts -->
+        <div class="demo-accounts">
+            <div class="demo-title">
+                <i class="bi bi-play-circle me-2"></i>Try Demo Accounts
+            </div>
+            
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="demo-account" data-email="admin@fbrvoice.com" data-password="admin123">
+                        <div class="demo-role">Admin</div>
+                        <div class="demo-credentials">admin@fbrvoice.com</div>
+                        <div class="demo-description">Full system access</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="demo-account" data-email="accountant@fbrvoice.com" data-password="accountant123">
+                        <div class="demo-role">Accountant</div>
+                        <div class="demo-credentials">accountant@fbrvoice.com</div>
+                        <div class="demo-description">Invoice management</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="demo-account" data-email="cashier@fbrvoice.com" data-password="cashier123">
+                        <div class="demo-role">Cashier</div>
+                        <div class="demo-credentials">cashier@fbrvoice.com</div>
+                        <div class="demo-description">Invoice creation</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="demo-account" data-email="demo@business.com" data-password="demo123">
+                        <div class="demo-role">Demo User</div>
+                        <div class="demo-credentials">demo@business.com</div>
+                        <div class="demo-description">Sample business</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Right Side - Login Form -->
-            <div class="col-lg-6 d-flex align-items-center justify-content-center">
-                <div class="w-100" style="max-width: 400px;">
-                    <div class="text-center mb-4">
-                        <h2 class="h3 mb-3">Welcome Back</h2>
-                        <p class="text-muted">Sign in to your account to continue</p>
-                    </div>
-
-                    <!-- Session Status -->
-                    <x-auth-session-status class="mb-4" :status="session('status')" />
-
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-
-                        <!-- Email Address -->
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" value="{{ old('email') }}" required autofocus>
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Password -->
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                   id="password" name="password" required>
-                            @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Remember Me -->
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember_me" name="remember">
-                            <label class="form-check-label" for="remember_me">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Sign In
-                            </button>
-                        </div>
-
-                        <div class="text-center mt-3">
-                            @if (Route::has('password.request'))
-                                <a class="text-decoration-none" href="{{ route('password.request') }}">
-                                    Forgot your password?
-                                </a>
-                            @endif
-                        </div>
-                    </form>
-
-                    <!-- Demo Accounts -->
-                    <div class="mt-4 p-3 bg-light rounded">
-                        <h6 class="small text-muted mb-2">Demo Accounts:</h6>
-                        <div class="row small">
-                            <div class="col-6">
-                                <strong>Admin:</strong><br>
-                                admin@fbrvoice.com<br>
-                                admin123
-                            </div>
-                            <div class="col-6">
-                                <strong>Accountant:</strong><br>
-                                accountant@fbrvoice.com<br>
-                                accountant123
-                            </div>
-                        </div>
-                        <div class="row small mt-2">
-                            <div class="col-6">
-                                <strong>Cashier:</strong><br>
-                                cashier@fbrvoice.com<br>
-                                cashier123
-                            </div>
-                            <div class="col-6">
-                                <strong>Demo User:</strong><br>
-                                demo@business.com<br>
-                                demo123
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>Click any demo account to auto-fill credentials
+                </small>
             </div>
         </div>
     </div>
