@@ -20,7 +20,6 @@ class DashboardController extends Controller
         $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
-        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
         if ($profileIds->isEmpty()) {
             $stats = [
@@ -51,5 +50,20 @@ class DashboardController extends Controller
             ];
 
             // Monthly invoice data for chart
+                ->whereYear('invoice_date', date('Y'))
+                ->groupBy('month', 'year')
+                ->orderBy('month')
+                ->get();
+
+            // Recent invoices
+            $recentInvoices = Invoice::whereIn('business_profile_id', $profileIds)
+                ->where('status', '!=', 'discarded')
+                ->with(['customer', 'businessProfile'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+        }
+
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }
