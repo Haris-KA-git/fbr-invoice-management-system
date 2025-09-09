@@ -14,10 +14,11 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
         // Get accessible business profile IDs (owned + shared)
-        $ownedProfileIds = $user->businessProfiles()->pluck('business_profiles.id');
-        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('business_profiles.id');
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
         if ($profileIds->isEmpty()) {
@@ -38,14 +39,8 @@ class DashboardController extends Controller
                 'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
                 'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
                 'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
-                'draft_invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', 'draft')->count(),
-                'active_invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', 'active')->count(),
                 'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
                     ->where('fbr_status', 'pending')
-                    ->where('status', '!=', 'discarded')
-                    ->count(),
-                'submitted_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
-                    ->where('fbr_status', 'submitted')
                     ->where('status', '!=', 'discarded')
                     ->count(),
                 'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
@@ -55,14 +50,6 @@ class DashboardController extends Controller
             ];
 
             // Monthly invoice data for chart
-            $monthlyData = Invoice::whereIn('business_profile_id', $profileIds)
-                ->where('status', '!=', 'discarded')
-                ->select(
-                    DB::raw('MONTH(invoice_date) as month'),
-                    DB::raw('YEAR(invoice_date) as year'),
-                    DB::raw('COUNT(*) as count'),
-                    DB::raw('SUM(total_amount) as total')
-                )
                 ->whereYear('invoice_date', date('Y'))
                 ->groupBy('month', 'year')
                 ->orderBy('month')

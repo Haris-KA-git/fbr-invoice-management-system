@@ -51,5 +51,6 @@ class DashboardController extends Controller
             ];
 
             // Monthly invoice data for chart
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }
