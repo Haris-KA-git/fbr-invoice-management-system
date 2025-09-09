@@ -105,27 +105,31 @@ class ReportController extends Controller
     {
         $user = auth()->user();
         
-        if ($user->hasRole('Admin')) {
-            $profileIds = BusinessProfile::pluck('id')->toArray();
-        } else {
-            $profileIds = $user->getAccessibleBusinessProfileIds();
+        if ($user->hasRole('Admin') || $user->can('view reports')) {
+            if ($user->hasRole('Admin')) {
+                $profileIds = BusinessProfile::pluck('id')->toArray();
+            } else {
+                $profileIds = $user->getAccessibleBusinessProfileIds();
+            }
+
+            $query = Item::with('businessProfile')
+                ->whereIn('business_profile_id', $profileIds)
+                ->withCount('invoiceItems')
+                ->withSum('invoiceItems', 'quantity')
+                ->withSum('invoiceItems', 'line_total');
+
+            // Apply filters
+            if ($request->business_profile_id) {
+                $query->where('business_profile_id', $request->business_profile_id);
+            }
+
+            $items = $query->orderBy('invoice_items_sum_line_total', 'desc')->paginate(20);
+            $businessProfiles = BusinessProfile::whereIn('id', $profileIds)->get();
+
+            return view('reports.items', compact('items', 'businessProfiles'));
         }
 
-        $query = Item::with('businessProfile')
-            ->whereIn('business_profile_id', $profileIds)
-            ->withCount('invoiceItems')
-            ->withSum('invoiceItems', 'quantity')
-            ->withSum('invoiceItems', 'line_total');
-
-        // Apply filters
-        if ($request->business_profile_id) {
-            $query->where('business_profile_id', $request->business_profile_id);
-        }
-
-        $items = $query->orderBy('invoice_items_sum_line_total', 'desc')->paginate(20);
-        $businessProfiles = BusinessProfile::whereIn('id', $profileIds)->get();
-
-        return view('reports.items', compact('items', 'businessProfiles'));
+        abort(403, 'You do not have permission to view reports.');
     }
 
     public function taxReport(Request $request)
