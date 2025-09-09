@@ -1,114 +1,53 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\BusinessProfile;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class UserSeeder extends Seeder
+class DashboardController extends Controller
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function index()
     {
-        DB::transaction(function () {
-            // Create Admin User
-            $admin = User::firstOrCreate(
-                ['email' => 'admin@fbrvoice.com'],
-                [
-                    'name' => 'System Administrator',
-                    'password' => Hash::make('admin123'),
-                    'email_verified_at' => now(),
-                    'is_active' => true,
-                ]
-            );
-            $admin->assignRole('Admin');
-            $this->createDefaultBusinessProfile($admin);
+        $user = auth()->user();
+        
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-            // Create Accountant User
-            $accountant = User::firstOrCreate(
-                ['email' => 'accountant@fbrvoice.com'],
-                [
-                    'name' => 'Chief Accountant',
-                    'password' => Hash::make('accountant123'),
-                    'email_verified_at' => now(),
-                    'is_active' => true,
-                ]
-            );
-            $accountant->assignRole('Accountant');
-            $this->createDefaultBusinessProfile($accountant);
-
-            // Create Cashier User
-            $cashier = User::firstOrCreate(
-                ['email' => 'cashier@fbrvoice.com'],
-                [
-                    'name' => 'Sales Cashier',
-                    'password' => Hash::make('cashier123'),
-                    'email_verified_at' => now(),
-                    'is_active' => true,
-                ]
-            );
-            $cashier->assignRole('Cashier');
-            $this->createDefaultBusinessProfile($cashier);
-
-            // Create Auditor User
-            $auditor = User::firstOrCreate(
-                ['email' => 'auditor@fbrvoice.com'],
-                [
-                    'name' => 'Internal Auditor',
-                    'password' => Hash::make('auditor123'),
-                    'email_verified_at' => now(),
-                    'is_active' => true,
-                ]
-            );
-            $auditor->assignRole('Auditor');
-            $this->createDefaultBusinessProfile($auditor);
-
-            // Create Demo Business Owner
-            $owner = User::firstOrCreate(
-                ['email' => 'demo@business.com'],
-                [
-                    'name' => 'Demo Business Owner',
-                    'password' => Hash::make('demo123'),
-                    'email_verified_at' => now(),
-                    'is_active' => true,
-                ]
-            );
-            $owner->assignRole('Accountant');
-            $this->createDefaultBusinessProfile($owner);
-        });
-    }
-
-    private function createDefaultBusinessProfile(User $user)
-    {
-        // Check if user already has a business profile
-        if ($user->businessProfiles()->count() > 0) {
-            return;
+            // Monthly invoice data for chart
         }
 
-        $businessProfile = BusinessProfile::create([
-            'user_id' => $user->id,
-            'business_name' => $user->name . "'s Business",
-            'address' => 'Please update your business address',
-            'province_code' => '01', // Default to Punjab
-            'is_sandbox' => true,
-            'is_active' => true,
-        ]);
-
-        // Add user as owner of the business profile
-        $businessProfile->users()->attach($user->id, [
-            'role' => 'owner',
-            'permissions' => json_encode([
-                'view_invoices', 'create_invoices', 'edit_invoices', 'delete_invoices',
-                'view_customers', 'create_customers', 'edit_customers',
-                'view_items', 'create_items', 'edit_items',
-                'view_reports'
-            ]),
-            'is_active' => true,
-        ]);
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }

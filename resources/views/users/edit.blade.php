@@ -1,104 +1,53 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex align-items-center">
-            <a href="{{ route('users.index') }}" class="btn btn-outline-secondary me-3">
-                <i class="bi bi-arrow-left"></i>
-            </a>
-            <div>
-                <h2 class="h3 mb-0">Edit User</h2>
-                <p class="text-muted mb-0">Update {{ $user->name }} information</p>
-            </div>
-        </div>
-    </x-slot>
+<?php
 
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" action="{{ route('users.update', $user) }}">
-                        @csrf
-                        @method('PUT')
+namespace App\Http\Controllers;
 
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                       id="name" name="name" value="{{ old('name', $user->name) }}" required>
-                                @error('name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
+use App\Models\BusinessProfile;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
-                            <div class="col-md-6">
-                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                       id="email" name="email" value="{{ old('email', $user->email) }}" required>
-                                @error('email')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
+class DashboardController extends Controller
+{
+    public function index()
+    {
+        $user = auth()->user();
+        
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <label for="password" class="form-label">New Password</label>
-                                <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                       id="password" name="password">
-                                @error('password')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <div class="form-text">Leave blank to keep current password</div>
-                            </div>
+            // Monthly invoice data for chart
+        }
 
-                            <div class="col-md-6">
-                                <label for="password_confirmation" class="form-label">Confirm New Password</label>
-                                <input type="password" class="form-control" 
-                                       id="password_confirmation" name="password_confirmation">
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Roles <span class="text-danger">*</span></label>
-                            <div class="row">
-                                @foreach($roles as $role)
-                                    <div class="col-md-6 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input @error('roles') is-invalid @enderror" 
-                                                   type="checkbox" value="{{ $role->name }}" 
-                                                   id="role_{{ $role->id }}" name="roles[]"
-                                                   {{ in_array($role->name, old('roles', $userRoles)) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="role_{{ $role->id }}">
-                                                {{ $role->name }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            @error('roles')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" 
-                                       {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_active">
-                                    Active User
-                                </label>
-                                <div class="form-text">Inactive users cannot login to the system</div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check2 me-2"></i>Update User
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</x-app-layout>
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
+    }
+}

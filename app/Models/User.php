@@ -1,97 +1,53 @@
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
+use App\Models\BusinessProfile;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
-class User extends Authenticatable
+class DashboardController extends Controller
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'is_active',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'is_active' => 'boolean',
-    ];
-
-    public function businessProfiles(): HasMany
+    public function index()
     {
-        return $this->hasMany(BusinessProfile::class);
-    }
+        $user = auth()->user();
+        
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-    public function invoices(): HasMany
-    {
-        return $this->hasMany(Invoice::class);
-    }
-
-    public function auditLogs(): HasMany
-    {
-        return $this->hasMany(AuditLog::class);
-    }
-
-    public function accessibleBusinessProfiles(): BelongsToMany
-    {
-        return $this->belongsToMany(BusinessProfile::class)
-            ->withPivot(['role', 'permissions', 'is_active'])
-            ->wherePivot('is_active', true)
-            ->withTimestamps();
-    }
-
-    public function allBusinessProfiles(): BelongsToMany
-    {
-        return $this->belongsToMany(BusinessProfile::class)
-            ->withPivot(['role', 'permissions', 'is_active'])
-            ->withTimestamps();
-    }
-
-    public function hasBusinessProfileAccess($businessProfileId, $permission = null): bool
-    {
-        $profile = $this->accessibleBusinessProfiles()
-            ->where('business_profile_id', $businessProfileId)
-            ->first();
-
-        if (!$profile) {
-            return false;
+            // Monthly invoice data for chart
         }
 
-        if (!$permission) {
-            return true;
-        }
-
-        $userPermissions = $profile->pivot->permissions ? json_decode($profile->pivot->permissions, true) : [];
-        return in_array($permission, $userPermissions) || $profile->pivot->role === 'owner';
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }

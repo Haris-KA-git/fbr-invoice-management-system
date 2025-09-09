@@ -2,224 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\BusinessProfile;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\DB;
 
-class UserController extends Controller
+class DashboardController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:manage users');
-    }
-
     public function index()
     {
-        $users = User::with('roles')
-            ->when(request('search'), function($query) {
-                $query->where(function($q) {
-                    $q->where('name', 'like', '%' . request('search') . '%')
-                      ->orWhere('email', 'like', '%' . request('search') . '%');
-                });
-            })
-            ->when(request('role'), function($query) {
-                $query->whereHas('roles', function($q) {
-                    $q->where('name', request('role'));
-                });
-            })
-            ->when(request('status'), function($query) {
-                if (request('status') === 'active') {
-                    $query->where('is_active', true);
-                } elseif (request('status') === 'inactive') {
-                    $query->where('is_active', false);
-                }
-            })
-            ->latest()
-            ->paginate(15);
-
-        $roles = Role::all();
-
-        return view('users.index', compact('users', 'roles'));
-    }
-
-    public function create()
-    {
-        $roles = Role::all();
-        return view('users.create', compact('roles'));
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'roles' => 'required|array|min:1',
-            'roles.*' => 'exists:roles,name',
-        ]);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'email_verified_at' => now(),
-            'is_active' => true,
-        ]);
-
-        $user->assignRole($validated['roles']);
-
-        return redirect()->route('users.index')
-            ->with('success', 'User created successfully.');
-    }
-
-    public function show(User $user)
-    {
-        $user->load(['roles', 'businessProfiles', 'invoices']);
+        $user = auth()->user();
         
-        return view('users.show', compact('user'));
-    }
-
-    public function edit(User $user)
-    {
-        $roles = Role::all();
-        $userRoles = $user->roles->pluck('name')->toArray();
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
         
-        return view('users.edit', compact('user', 'roles', 'userRoles'));
-    }
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-    public function update(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8|confirmed',
-            'roles' => 'required|array|min:1',
-            'roles.*' => 'exists:roles,name',
-            'is_active' => 'boolean',
-        ]);
-
-        $updateData = [
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'is_active' => $request->has('is_active'),
-        ];
-
-        if (!empty($validated['password'])) {
-            $updateData['password'] = Hash::make($validated['password']);
+            // Monthly invoice data for chart
         }
 
-        $user->update($updateData);
-        $user->syncRoles($validated['roles']);
-
-        return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
-    }
-
-    public function destroy(User $user)
-    {
-        // Prevent deleting the current user
-        if ($user->id === auth()->id()) {
-            return redirect()->route('users.index')
-                ->with('error', 'You cannot delete your own account.');
-        }
-
-        // Check if user has business profiles or invoices
-        if ($user->businessProfiles()->count() > 0 || $user->invoices()->count() > 0) {
-            return redirect()->route('users.index')
-                ->with('error', 'Cannot delete user with existing business profiles or invoices.');
-        }
-
-        $user->delete();
-
-        return redirect()->route('users.index')
-            ->with('success', 'User deleted successfully.');
-    }
-
-    public function roles()
-    {
-        $this->middleware('permission:manage roles');
-        
-        $roles = Role::with('permissions')->get();
-        $permissions = Permission::all()->groupBy(function($permission) {
-            return explode(' ', $permission->name)[1] ?? 'general';
-        });
-
-        return view('users.roles', compact('roles', 'permissions'));
-    }
-
-    public function createRole()
-    {
-        $this->middleware('permission:manage roles');
-        
-        $permissions = Permission::all()->groupBy(function($permission) {
-            return explode(' ', $permission->name)[1] ?? 'general';
-        });
-
-        return view('users.create-role', compact('permissions'));
-    }
-
-    public function storeRole(Request $request)
-    {
-        $this->middleware('permission:manage roles');
-        
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles',
-            'permissions' => 'required|array|min:1',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
-
-        $role = Role::create(['name' => $validated['name']]);
-        $role->syncPermissions($validated['permissions']);
-
-        return redirect()->route('users.roles')
-            ->with('success', 'Role created successfully.');
-    }
-
-    public function editRole(Role $role)
-    {
-        $this->middleware('permission:manage roles');
-        
-        $permissions = Permission::all()->groupBy(function($permission) {
-            return explode(' ', $permission->name)[1] ?? 'general';
-        });
-        
-        $rolePermissions = $role->permissions->pluck('name')->toArray();
-
-        return view('users.edit-role', compact('role', 'permissions', 'rolePermissions'));
-    }
-
-    public function updateRole(Request $request, Role $role)
-    {
-        $this->middleware('permission:manage roles');
-        
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
-            'permissions' => 'required|array|min:1',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
-
-        $role->update(['name' => $validated['name']]);
-        $role->syncPermissions($validated['permissions']);
-
-        return redirect()->route('users.roles')
-            ->with('success', 'Role updated successfully.');
-    }
-
-    public function destroyRole(Role $role)
-    {
-        $this->middleware('permission:manage roles');
-        
-        // Prevent deleting roles that are assigned to users
-        if ($role->users()->count() > 0) {
-            return redirect()->route('users.roles')
-                ->with('error', 'Cannot delete role that is assigned to users.');
-        }
-
-        $role->delete();
-
-        return redirect()->route('users.roles')
-            ->with('success', 'Role deleted successfully.');
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }

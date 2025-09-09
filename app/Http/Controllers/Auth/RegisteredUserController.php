@@ -1,80 +1,53 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\BusinessProfile;
-use App\Providers\RouteServiceProvider;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Item;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules;
-use Illuminate\View\View;
 
-class RegisteredUserController extends Controller
+class DashboardController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
-    public function create(): View
+    public function index()
     {
-        return view('auth.register');
-    }
+        $user = auth()->user();
+        
+        // Get accessible business profile IDs (owned + shared)
+        $ownedProfileIds = $user->businessProfiles()->pluck('id');
+        $accessibleProfileIds = $user->accessibleBusinessProfiles()->pluck('id');
+        $profileIds = $ownedProfileIds->merge($accessibleProfileIds)->unique();
+        
+        if ($profileIds->isEmpty()) {
+            $stats = [
+                'customers' => 0,
+                'items' => 0,
+                'invoices' => 0,
+                'pending_invoices' => 0,
+                'total_amount' => 0,
+            ];
+            $monthlyData = collect();
+            $recentInvoices = collect();
+        } else {
+            $stats = [
+                'customers' => Customer::whereIn('business_profile_id', $profileIds)->count(),
+                'items' => Item::whereIn('business_profile_id', $profileIds)->count(),
+                'invoices' => Invoice::whereIn('business_profile_id', $profileIds)->where('status', '!=', 'discarded')->count(),
+                'pending_invoices' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'pending')
+                    ->where('status', '!=', 'discarded')
+                    ->count(),
+                'total_amount' => Invoice::whereIn('business_profile_id', $profileIds)
+                    ->where('fbr_status', 'submitted')
+                    ->where('status', '!=', 'discarded')
+                    ->sum('total_amount'),
+            ];
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+            // Monthly invoice data for chart
+        }
 
-        DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-            ]);
-
-            // Assign default role
-            $user->assignRole('Cashier');
-
-            // Create default business profile
-            $businessProfile = BusinessProfile::create([
-                'user_id' => $user->id,
-                'business_name' => $user->name . "'s Business",
-                'address' => 'Please update your business address',
-                'province_code' => '01', // Default to Punjab
-                'is_sandbox' => true,
-                'is_active' => true,
-            ]);
-
-            // Add user as owner of the business profile
-            $businessProfile->users()->attach($user->id, [
-                'role' => 'owner',
-                'permissions' => json_encode([
-                    'view_invoices', 'create_invoices', 'edit_invoices', 'delete_invoices',
-                    'view_customers', 'create_customers', 'edit_customers',
-                    'view_items', 'create_items', 'edit_items',
-                    'view_reports'
-                ]),
-                'is_active' => true,
-            ]);
-
-            event(new Registered($user));
-            Auth::login($user);
-        });
-
-
-        return redirect(RouteServiceProvider::HOME);
+        return view('dashboard', compact('stats', 'monthlyData', 'recentInvoices'));
     }
 }
