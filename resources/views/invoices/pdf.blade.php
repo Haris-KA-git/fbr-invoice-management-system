@@ -248,9 +248,7 @@
                     <td>
                         <strong>{{ $item->item->name }}</strong><br>
                         <small>Code: {{ $item->item->item_code }}</small>
-                        @if($item->item->hs_code)
-                            <br><small>HS Code: {{ $item->item->hs_code }}</small>
-                        @endif
+                        <br><small>HS Code: {{ $item->item->hs_code }}</small>
                     </td>
                     <td class="text-center">{{ $item->quantity }} {{ $item->item->unit_of_measure }}</td>
                     <td class="text-right">₨{{ number_format($item->unit_price, 2) }}</td>

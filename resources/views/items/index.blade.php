@@ -5,10 +5,16 @@
                 <h2 class="h3 mb-0">Items</h2>
                 <p class="text-muted mb-0">Manage your product and service catalog</p>
             </div>
-            <div>
+            <div class="btn-group">
                 <a href="{{ route('items.create') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-2"></i>Add Item
                 </a>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                    <i class="bi bi-upload me-2"></i>Import
+                </button>
+                <button type="button" class="btn btn-info" onclick="exportItems()">
+                    <i class="bi bi-download me-2"></i>Export
+                </button>
             </div>
         </div>
     </x-slot>
@@ -125,4 +131,107 @@
             {{ $items->links() }}
         </div>
     @endif
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Items</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="importForm" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="business_profile_id" class="form-label">Business Profile <span class="text-danger">*</span></label>
+                            <select class="form-select" id="import_business_profile_id" name="business_profile_id" required>
+                                <option value="">Select Business Profile</option>
+                                @foreach($businessProfiles as $profile)
+                                    <option value="{{ $profile->id }}">{{ $profile->business_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="file" class="form-label">CSV/Excel File <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="import_file" name="file" accept=".csv,.xlsx,.xls" required>
+                            <div class="form-text">Maximum file size: 10MB</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6>Required CSV Headers:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Name</strong> - Item name</li>
+                                <li><strong>HS_Code</strong> - Harmonized System Code</li>
+                                <li><strong>Unit_of_Measure</strong> - UOM (PCS, KG, etc.)</li>
+                                <li><strong>Price</strong> - Unit price</li>
+                                <li><strong>GST_Rate</strong> - Tax rate percentage</li>
+                                <li><strong>Description</strong> - Item description (optional)</li>
+                                <li><strong>Item_Code</strong> - Item code (optional, auto-generated)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload me-2"></i>Import Items
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @push('scripts')
+    <script>
+        // Import form submission
+        document.getElementById('importForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Importing...';
+            
+            fetch('/api/items/import', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Authorization': 'Bearer ' + '{{ auth()->user()->createToken("import")->plainTextToken ?? "" }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Import completed!\nImported: ${data.results.imported}\nUpdated: ${data.results.updated}\nSkipped: ${data.results.skipped}`);
+                    location.reload();
+                } else {
+                    alert('Import failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Import failed: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+        
+        // Export function
+        function exportItems() {
+            const businessProfileId = document.querySelector('select[name="business_profile_id"]').value;
+            let url = '/api/items/export';
+            
+            if (businessProfileId) {
+                url += '?business_profile_id=' + businessProfileId;
+            }
+            
+            window.location.href = url;
+        }
+    </script>
+    @endpush
 </x-app-layout>

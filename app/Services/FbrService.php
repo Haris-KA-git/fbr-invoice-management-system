@@ -150,11 +150,11 @@ class FbrService
                 'ItemCode' => $invoiceItem->item->item_code,
                 'ItemName' => $invoiceItem->item->name,
                 'HSCode' => $invoiceItem->item->hs_code,
+                'UOMCode' => $invoiceItem->item->unit_of_measure,
                 'Quantity' => $invoiceItem->quantity,
-                'UnitOfMeasure' => $invoiceItem->item->unit_of_measure,
                 'UnitPrice' => $invoiceItem->unit_price,
                 'TotalAmount' => $invoiceItem->line_total,
-                'TaxRate' => $invoiceItem->tax_rate,
+                'GSTRate' => $invoiceItem->tax_rate,
                 'TaxAmount' => $invoiceItem->tax_amount,
                 'DiscountAmount' => $invoiceItem->discount_amount,
             ];

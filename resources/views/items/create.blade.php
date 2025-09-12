@@ -65,13 +65,13 @@
 
                         <div class="row mb-4">
                             <div class="col-md-6">
-                                <label for="hs_code" class="form-label">HS Code</label>
+                                <label for="hs_code" class="form-label">HS Code <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('hs_code') is-invalid @enderror" 
-                                       id="hs_code" name="hs_code" value="{{ old('hs_code') }}">
+                                       id="hs_code" name="hs_code" value="{{ old('hs_code') }}" required>
                                 @error('hs_code')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Harmonized System Code for tax classification</div>
+                                <div class="form-text">Harmonized System Code for tax classification (required for FBR)</div>
                             </div>
 
                             <div class="col-md-6">
