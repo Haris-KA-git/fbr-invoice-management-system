@@ -186,39 +186,27 @@
     <script>
         // Import form submission
         document.getElementById('importForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Importing...';
+        });
+        
+        // Update form action
+        document.getElementById('importForm').action = '{{ route("items.import") }}';
+        
+        // Export function
+        function exportItems() {
+            const businessProfileId = document.querySelector('select[name="business_profile_id"]').value;
+            let url = '{{ route("items.export") }}';
             
-            fetch('/api/items/import', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Authorization': 'Bearer ' + '{{ auth()->user()->createToken("import")->plainTextToken ?? "" }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`Import completed!\nImported: ${data.results.imported}\nUpdated: ${data.results.updated}\nSkipped: ${data.results.skipped}`);
-                    location.reload();
-                } else {
-                    alert('Import failed: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Import failed: ' + error.message);
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
+            if (businessProfileId) {
+                url += '?business_profile_id=' + businessProfileId;
+            }
+            
+            window.location.href = url;
+        }
         });
         
         // Export function

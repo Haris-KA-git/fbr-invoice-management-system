@@ -88,6 +88,17 @@ Route::middleware('auth')->group(function () {
     
     // Invoice Verification (public route)
     Route::get('verify/{invoice}', [App\Http\Controllers\VerificationController::class, 'verify'])->name('invoices.verify');
+    
+    // Customer and Item Export/Import routes
+    Route::middleware('permission:view customers')->group(function () {
+        Route::post('customers/import', [App\Http\Controllers\CustomerController::class, 'import'])->name('customers.import');
+        Route::get('customers/export', [App\Http\Controllers\CustomerController::class, 'export'])->name('customers.export');
+    });
+    
+    Route::middleware('permission:view items')->group(function () {
+        Route::post('items/import', [App\Http\Controllers\ItemController::class, 'import'])->name('items.import');
+        Route::get('items/export', [App\Http\Controllers\ItemController::class, 'export'])->name('items.export');
+    });
 });
 
 require __DIR__.'/auth.php';
