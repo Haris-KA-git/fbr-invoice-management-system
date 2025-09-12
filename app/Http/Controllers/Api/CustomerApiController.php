@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Response;
 
-class CustomerApiController extends Controller
+class  extends Controller
 {
     public function import(Request $request)
     {
