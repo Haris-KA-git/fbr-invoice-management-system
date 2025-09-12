@@ -224,7 +224,12 @@
         @if($qrCodePath && file_exists($qrCodePath))
             <div class="qr-section">
                 <img src="{{ $qrCodePath }}" alt="QR Code">
-                <div style="font-size: 10px; margin-top: 5px;">Scan for verification</div>
+                <div style="font-size: 10px; margin-top: 5px;">
+                    <strong>Scan for FBR Verification</strong>
+                    @if($invoice->usin)
+                        <br>USIN: {{ $invoice->usin }}
+                    @endif
+                </div>
             </div>
         @endif
     </div>
@@ -248,7 +253,12 @@
                     <td>
                         <strong>{{ $item->item->name }}</strong><br>
                         <small>Code: {{ $item->item->item_code }}</small>
-                        <br><small>HS Code: {{ $item->item->hs_code }}</small>
+                        @if($item->item->hs_code)
+                            <br><small><strong>HS Code:</strong> {{ $item->item->hs_code }}</small>
+                        @endif
+                        @if($item->item->description)
+                            <br><small>{{ Str::limit($item->item->description, 50) }}</small>
+                        @endif
                     </td>
                     <td class="text-center">{{ $item->quantity }} {{ $item->item->unit_of_measure }}</td>
                     <td class="text-right">₨{{ number_format($item->unit_price, 2) }}</td>
@@ -314,9 +324,15 @@
     <div class="footer">
         <div style="text-align: left; float: left;">
             Generated on {{ now()->format('M d, Y H:i') }}
+            @if($invoice->usin)
+                <br>FBR USIN: {{ $invoice->usin }}
+            @endif
         </div>
         <div style="text-align: right; float: right;">
-            This is a computer generated invoice
+            This is a computer generated FBR compliant invoice
+            @if($invoice->fbr_verification_url)
+                <br>Verify at: {{ $invoice->fbr_verification_url }}
+            @endif
         </div>
         <div style="text-align: center;">
             {{ $invoice->businessProfile->business_name }} - FBR Compliant Digital Invoice

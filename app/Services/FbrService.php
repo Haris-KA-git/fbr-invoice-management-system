@@ -4,14 +4,20 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\FbrQueue;
+use App\Services\QrCodeService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class FbrService
 {
     private $sandboxBaseUrl = 'https://esp.fbr.gov.pk:8244/FBR/v1';
     private $productionBaseUrl = 'https://esp.fbr.gov.pk/FBR/v1';
+    private $qrCodeService;
+
+    public function __construct(QrCodeService $qrCodeService)
+    {
+        $this->qrCodeService = $qrCodeService;
+    }
 
     public function queueInvoice(Invoice $invoice)
     {
@@ -98,23 +104,15 @@ class FbrService
             if ($response->successful()) {
                 $responseData = $response->json();
                 
-                // Generate QR code
-                $qrData = [
-                    'InvoiceNumber' => $invoice->invoice_number,
-                    'USIN' => $responseData['USIN'] ?? '',
-                    'DateTime' => $invoice->invoice_date->format('Y-m-d H:i:s'),
-                    'Amount' => $invoice->total_amount,
-                ];
-                
-                $qrCode = QrCode::format('png')->size(100)->generate(json_encode($qrData));
-                $qrPath = 'qr-codes/' . $invoice->id . '.png';
-                \Storage::disk('public')->put($qrPath, $qrCode);
+                // Generate QR code with FBR compliant data
+                $qrPath = $this->qrCodeService->generateInvoiceQrCode($invoice);
 
                 $invoice->update([
                     'fbr_status' => 'submitted',
                     'fbr_response' => json_encode($responseData),
-                    'fbr_invoice_number' => $responseData['USIN'] ?? null,
-                    'qr_code' => $qrPath,
+                    'usin' => $responseData['USIN'] ?? null,
+                    'fbr_invoice_number' => $responseData['InvoiceNumber'] ?? null,
+                    'fbr_verification_url' => $responseData['VerificationURL'] ?? null,
                 ]);
 
                 return ['success' => true, 'data' => $responseData];
@@ -144,44 +142,111 @@ class FbrService
     {
         $invoice->load(['businessProfile', 'customer', 'invoiceItems.item']);
         
+        // FBR DI API v1.12 compliant structure
         $items = [];
         foreach ($invoice->invoiceItems as $invoiceItem) {
             $items[] = [
                 'ItemCode' => $invoiceItem->item->item_code,
                 'ItemName' => $invoiceItem->item->name,
+                'ItemDescription' => $invoiceItem->item->description ?? '',
                 'HSCode' => $invoiceItem->item->hs_code,
+                'PCTCode' => $invoiceItem->item->hs_code, // Pakistan Customs Tariff Code
+                'UOM' => $invoiceItem->item->unit_of_measure,
                 'UOMCode' => $invoiceItem->item->unit_of_measure,
-                'Quantity' => $invoiceItem->quantity,
-                'UnitPrice' => $invoiceItem->unit_price,
-                'TotalAmount' => $invoiceItem->line_total,
-                'GSTRate' => $invoiceItem->tax_rate,
-                'TaxAmount' => $invoiceItem->tax_amount,
-                'DiscountAmount' => $invoiceItem->discount_amount,
+                'Quantity' => (float) $invoiceItem->quantity,
+                'UnitPrice' => (float) $invoiceItem->unit_price,
+                'TotalAmount' => (float) $invoiceItem->line_total,
+                'TaxableAmount' => (float) ($invoiceItem->quantity * $invoiceItem->unit_price - $invoiceItem->discount_amount),
+                'SalesTaxRate' => (float) $invoiceItem->tax_rate,
+                'SalesTaxAmount' => (float) $invoiceItem->tax_amount,
+                'DiscountRate' => (float) $invoiceItem->discount_rate,
+                'DiscountAmount' => (float) $invoiceItem->discount_amount,
+                'FurtherTaxRate' => 0.0,
+                'FurtherTaxAmount' => 0.0,
+                'TotalAmountWithTax' => (float) $invoiceItem->line_total,
             ];
         }
 
+        // FBR DI API v1.12 compliant invoice structure
         return [
             'InvoiceNumber' => $invoice->invoice_number,
-            'InvoiceDate' => $invoice->invoice_date->format('Y-m-d'),
-            'InvoiceType' => ucfirst(str_replace('_', ' ', $invoice->invoice_type)),
+            'InvoiceType' => $this->mapInvoiceType($invoice->invoice_type),
             'DocumentType' => 'Invoice',
+            'InvoiceDate' => $invoice->invoice_date->format('Y-m-d'),
+            'InvoiceTime' => $invoice->created_at->format('H:i:s'),
+            'CurrencyCode' => 'PKR',
+            'ExchangeRate' => 1.0,
+            'InvoiceValue' => (float) $invoice->total_amount,
+            'TotalSalesTax' => (float) $invoice->sales_tax,
+            'TotalAmount' => (float) $invoice->total_amount,
+            'PaymentMode' => 'Cash', // Default payment mode
+            'RefUSIN' => null, // For credit/debit notes
             'Seller' => [
                 'BusinessName' => $invoice->businessProfile->business_name,
-                'STRN' => $invoice->businessProfile->strn_ntn,
+                 'NTN' => $invoice->businessProfile->strn_ntn ?? '',
+                 'STRN' => $invoice->businessProfile->strn_ntn ?? '',
                 'Address' => $invoice->businessProfile->address,
-                'ProvinceCode' => $invoice->businessProfile->province_code,
+                 'City' => $this->extractCity($invoice->businessProfile->address),
+                 'Country' => 'Pakistan',
+                 'ProvinceCode' => $invoice->businessProfile->province_code ?? '01',
+                 'PostalCode' => $this->extractPostalCode($invoice->businessProfile->address),
+                 'ContactNumber' => $invoice->businessProfile->contact_phone ?? '',
+                 'EmailAddress' => $invoice->businessProfile->contact_email ?? '',
             ],
             'Buyer' => [
                 'Name' => $invoice->customer->name,
-                'NTN' => $invoice->customer->ntn_cnic,
+                'NTN' => $invoice->customer->customer_type === 'registered' ? $invoice->customer->ntn_cnic : '',
+                'CNIC' => $invoice->customer->customer_type === 'unregistered' ? $invoice->customer->ntn_cnic : '',
+                'STRN' => $invoice->customer->customer_type === 'registered' ? $invoice->customer->ntn_cnic : '',
                 'Address' => $invoice->customer->address,
-                'CustomerType' => $invoice->customer->customer_type,
+                'City' => $this->extractCity($invoice->customer->address ?? ''),
+                'Country' => 'Pakistan',
+                'ContactNumber' => $invoice->customer->contact_phone ?? '',
+                'EmailAddress' => $invoice->customer->contact_email ?? '',
             ],
             'Items' => $items,
-            'Summary' => [
-                'SubTotal' => $invoice->subtotal,
-                'SalesTax' => $invoice->sales_tax,
-                'TotalAmount' => $invoice->total_amount,
+            'PaymentTerms' => 'Immediate',
+            'Remarks' => 'FBR Compliant Digital Invoice',
+        ];
+    }
+
+    private function mapInvoiceType(string $type): string
+    {
+        return match($type) {
+            'sales' => 'Sales Invoice',
+            'purchase' => 'Purchase Invoice',
+            'debit_note' => 'Debit Note',
+            'credit_note' => 'Credit Note',
+            default => 'Sales Invoice'
+        };
+    }
+
+    private function extractCity(string $address): string
+    {
+        // Simple city extraction - look for common Pakistani cities
+        $cities = ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala'];
+        
+        foreach ($cities as $city) {
+            if (stripos($address, $city) !== false) {
+                return $city;
+            }
+        }
+        
+        // If no city found, try to extract from address parts
+        $parts = explode(',', $address);
+        return trim($parts[count($parts) - 2] ?? 'Lahore'); // Default to Lahore
+    }
+
+    private function extractPostalCode(string $address): string
+    {
+        // Extract postal code pattern (5 digits)
+        if (preg_match('/\b\d{5}\b/', $address, $matches)) {
+            return $matches[0];
+        }
+        return '54000'; // Default postal code
+    }
+}
+
             ],
         ];
     }

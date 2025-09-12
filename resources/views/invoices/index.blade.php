@@ -68,6 +68,7 @@
                             <th>Type</th>
                             <th>Items</th>
                             <th>Amount</th>
+                            <th>QR Code</th>
                             <th>Status</th>
                             <th>FBR Status</th>
                             <th>Actions</th>
@@ -94,6 +95,13 @@
                                 </td>
                                 <td>{{ $invoice->invoiceItems->count() }}</td>
                                 <td>₨{{ number_format($invoice->total_amount, 2) }}</td>
+                                <td class="text-center">
+                                    @if($invoice->qr_code_path)
+                                        <i class="bi bi-qr-code text-success" title="QR Code Available"></i>
+                                    @else
+                                        <i class="bi bi-qr-code text-muted" title="No QR Code"></i>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-{{ $invoice->status === 'draft' ? 'secondary' : ($invoice->status === 'discarded' ? 'danger' : 'primary') }}">
                                         {{ ucfirst($invoice->status) }}
@@ -139,7 +147,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center py-4">
+                                <td colspan="11" class="text-center py-4">
                                     <i class="bi bi-file-earmark-text display-1 text-muted mb-3"></i>
                                     <h4>No invoices found</h4>
                                     <p class="text-muted">Start by creating your first invoice</p>

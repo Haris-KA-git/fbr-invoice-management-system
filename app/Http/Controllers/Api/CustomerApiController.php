@@ -69,7 +69,7 @@ class  extends Controller
         $customers = $query->get();
 
         $csvData = [];
-        $csvData[] = ['Name', 'NTN/CNIC', 'Address', 'Contact Phone', 'Contact Email', 'Customer Type', 'Business Profile'];
+        $csvData[] = ['Name', 'NTN/CNIC', 'Address', 'Contact Phone', 'Contact Email', 'Customer Type', 'Business Profile', 'Business Profile ID'];
 
         foreach ($customers as $customer) {
             $csvData[] = [
@@ -80,6 +80,7 @@ class  extends Controller
                 $customer->contact_email,
                 $customer->customer_type,
                 $customer->businessProfile->business_name,
+                $customer->business_profile_id,
             ];
         }
 

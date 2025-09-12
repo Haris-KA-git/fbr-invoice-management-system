@@ -69,7 +69,7 @@ class ItemApiController extends Controller
         $items = $query->get();
 
         $csvData = [];
-        $csvData[] = ['Item Code', 'Name', 'Description', 'HS Code', 'Unit of Measure', 'Price', 'GST Rate (%)', 'Business Profile'];
+        $csvData[] = ['Item Code', 'Name', 'Description', 'HS Code', 'Unit of Measure', 'Price', 'GST Rate (%)', 'Business Profile', 'Business Profile ID'];
 
         foreach ($items as $item) {
             $csvData[] = [
@@ -81,6 +81,7 @@ class ItemApiController extends Controller
                 $item->price,
                 $item->tax_rate,
                 $item->businessProfile->business_name,
+                $item->business_profile_id,
             ];
         }
 

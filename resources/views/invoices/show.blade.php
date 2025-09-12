@@ -232,10 +232,23 @@
                         <span class="text-primary"><strong>₨{{ number_format($invoice->total_amount, 2) }}</strong></span>
                     </div>
 
-                    @if($invoice->qr_code)
+                    @if($invoice->qr_code_path)
                         <div class="text-center mt-3">
-                            <img src="{{ asset('storage/' . $invoice->qr_code) }}" alt="QR Code" class="img-fluid" style="max-width: 100px;">
+                            <img src="{{ asset('storage/' . $invoice->qr_code_path) }}" alt="QR Code" class="img-fluid" style="max-width: 120px;">
                             <br><small class="text-muted">Scan for verification</small>
+                            @if($invoice->fbr_verification_url)
+                                <br><a href="{{ $invoice->fbr_verification_url }}" target="_blank" class="btn btn-outline-primary btn-sm mt-2">
+                                    <i class="bi bi-link-45deg me-1"></i>Verify Online
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+                    
+                    @if($invoice->usin)
+                        <hr>
+                        <div class="text-center">
+                            <small class="text-muted">FBR USIN:</small>
+                            <br><code>{{ $invoice->usin }}</code>
                         </div>
                     @endif
                 </div>

@@ -17,6 +17,7 @@ class Invoice extends Model
         'user_id',
         'invoice_number',
         'fbr_invoice_number',
+        'usin',
         'invoice_date',
         'invoice_type',
         'status',
@@ -35,6 +36,8 @@ class Invoice extends Model
         'discarded_at',
         'discarded_by',
         'qr_code',
+        'qr_code_path',
+        'fbr_verification_url',
     ];
 
     protected $casts = [

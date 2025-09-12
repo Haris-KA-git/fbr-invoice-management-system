@@ -9,6 +9,7 @@ use App\Models\InvoiceItem;
 use App\Models\Item;
 use App\Services\FbrService;
 use App\Services\InvoicePdfService;
+use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,11 +17,13 @@ class InvoiceController extends Controller
 {
     protected $fbrService;
     protected $pdfService;
+    protected $qrCodeService;
 
-    public function __construct(FbrService $fbrService, InvoicePdfService $pdfService)
+    public function __construct(FbrService $fbrService, InvoicePdfService $pdfService, QrCodeService $qrCodeService)
     {
         $this->fbrService = $fbrService;
         $this->pdfService = $pdfService;
+        $this->qrCodeService = $qrCodeService;
     }
 
     public function index(Request $request)
@@ -183,6 +186,8 @@ class InvoiceController extends Controller
             // Queue for FBR submission if not draft
             if (!$request->has('save_as_draft')) {
                 $this->fbrService->queueInvoice($invoice);
+                // Generate QR code for active invoices
+                $this->qrCodeService->generateInvoiceQrCode($invoice);
             }
 
             DB::commit();
@@ -309,6 +314,11 @@ class InvoiceController extends Controller
             }
 
             DB::commit();
+            
+            // Regenerate QR code if invoice is active
+            if ($invoice->status === 'active') {
+                $this->qrCodeService->generateInvoiceQrCode($invoice);
+            }
 
             return redirect()->route('invoices.show', $invoice)
                 ->with('success', 'Invoice updated successfully.');
@@ -418,6 +428,9 @@ class InvoiceController extends Controller
         
         // Queue for FBR submission
         $this->fbrService->queueInvoice($invoice);
+        
+        // Generate QR code
+        $this->qrCodeService->generateInvoiceQrCode($invoice);
 
         return back()->with('success', 'Invoice activated and queued for FBR submission.');
     }

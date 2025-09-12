@@ -85,6 +85,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view audit logs')->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
+    
+    // Invoice Verification (public route)
+    Route::get('verify/{invoice}', [App\Http\Controllers\VerificationController::class, 'verify'])->name('invoices.verify');
 });
 
 require __DIR__.'/auth.php';
