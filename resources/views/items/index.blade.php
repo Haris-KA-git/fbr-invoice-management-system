@@ -207,19 +207,6 @@
             
             window.location.href = url;
         }
-        });
-        
-        // Export function
-        function exportItems() {
-            const businessProfileId = document.querySelector('select[name="business_profile_id"]').value;
-            let url = '/api/items/export';
-            
-            if (businessProfileId) {
-                url += '?business_profile_id=' + businessProfileId;
-            }
-            
-            window.location.href = url;
-        }
     </script>
     @endpush
 </x-app-layout>
