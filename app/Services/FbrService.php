@@ -261,7 +261,7 @@ class FbrService
             ],
             'Items' => $items,
             'PaymentTerms' => 'Immediate',
-            'Remarks' => 'FBR Compliant Digital Invoice - Generated via FBR Invoice System',
+            'Remarks' => 'FBR Compliant Digital Invoice - Generated via Expert Digital Invoice',
             'InvoiceCategory' => 'Normal',
             'SpecialProcedure' => 'Normal',
             'TaxInclusiveAmount' => (float) $invoice->total_amount,

@@ -19,18 +19,27 @@
                         @csrf
 
                         <div class="mb-4">
-                            <label for="business_profile_id" class="form-label">Business Profile <span class="text-danger">*</span></label>
-                            <select class="form-select @error('business_profile_id') is-invalid @enderror" id="business_profile_id" name="business_profile_id" required>
-                                <option value="">Select Business Profile</option>
-                                @foreach($businessProfiles as $profile)
-                                    <option value="{{ $profile->id }}" {{ old('business_profile_id') == $profile->id ? 'selected' : '' }}>
-                                        {{ $profile->business_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('business_profile_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            @if($businessProfiles->count() == 1)
+                                <input type="hidden" name="business_profile_id" value="{{ $businessProfiles->first()->id }}">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Business Profile:</strong> {{ $businessProfiles->first()->business_name }}
+                                    <small class="d-block">Auto-selected (you have only one business profile)</small>
+                                </div>
+                            @else
+                                <label for="business_profile_id" class="form-label">Business Profile <span class="text-danger">*</span></label>
+                                <select class="form-select @error('business_profile_id') is-invalid @enderror" id="business_profile_id" name="business_profile_id" required>
+                                    <option value="">Select Business Profile</option>
+                                    @foreach($businessProfiles as $profile)
+                                        <option value="{{ $profile->id }}" {{ old('business_profile_id') == $profile->id ? 'selected' : '' }}>
+                                            {{ $profile->business_name }} ({{ $profile->service_type }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('business_profile_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            @endif
                         </div>
 
                         <div class="row mb-4">

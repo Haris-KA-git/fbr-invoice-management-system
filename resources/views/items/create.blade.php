@@ -19,18 +19,27 @@
                         @csrf
 
                         <div class="mb-4">
-                            <label for="business_profile_id" class="form-label">Business Profile <span class="text-danger">*</span></label>
-                            <select class="form-select @error('business_profile_id') is-invalid @enderror" id="business_profile_id" name="business_profile_id" required>
-                                <option value="">Select Business Profile</option>
-                                @foreach($businessProfiles as $profile)
-                                    <option value="{{ $profile->id }}" {{ old('business_profile_id') == $profile->id ? 'selected' : '' }}>
-                                        {{ $profile->business_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('business_profile_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            @if($businessProfiles->count() == 1)
+                                <input type="hidden" name="business_profile_id" value="{{ $businessProfiles->first()->id }}">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Business Profile:</strong> {{ $businessProfiles->first()->business_name }}
+                                    <small class="d-block">Auto-selected (you have only one business profile)</small>
+                                </div>
+                            @else
+                                <label for="business_profile_id" class="form-label">Business Profile <span class="text-danger">*</span></label>
+                                <select class="form-select @error('business_profile_id') is-invalid @enderror" id="business_profile_id" name="business_profile_id" required>
+                                    <option value="">Select Business Profile</option>
+                                    @foreach($businessProfiles as $profile)
+                                        <option value="{{ $profile->id }}" {{ old('business_profile_id') == $profile->id ? 'selected' : '' }}>
+                                            {{ $profile->business_name }} ({{ $profile->service_type }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('business_profile_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            @endif
                         </div>
 
                         <div class="row mb-4">
@@ -75,21 +84,23 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label for="unit_of_measure" class="form-label">Unit of Measure <span class="text-danger">*</span></label>
-                                <select class="form-select @error('unit_of_measure') is-invalid @enderror" id="unit_of_measure" name="unit_of_measure" required>
-                                    <option value="">Select Unit</option>
-                                    <option value="PCS" {{ old('unit_of_measure') == 'PCS' ? 'selected' : '' }}>Pieces (PCS)</option>
-                                    <option value="KG" {{ old('unit_of_measure') == 'KG' ? 'selected' : '' }}>Kilogram (KG)</option>
-                                    <option value="LTR" {{ old('unit_of_measure') == 'LTR' ? 'selected' : '' }}>Liter (LTR)</option>
-                                    <option value="MTR" {{ old('unit_of_measure') == 'MTR' ? 'selected' : '' }}>Meter (MTR)</option>
-                                    <option value="SQM" {{ old('unit_of_measure') == 'SQM' ? 'selected' : '' }}>Square Meter (SQM)</option>
-                                    <option value="HR" {{ old('unit_of_measure') == 'HR' ? 'selected' : '' }}>Hour (HR)</option>
-                                    <option value="DAY" {{ old('unit_of_measure') == 'DAY' ? 'selected' : '' }}>Day (DAY)</option>
-                                    <option value="SET" {{ old('unit_of_measure') == 'SET' ? 'selected' : '' }}>Set (SET)</option>
+                                <label for="uom_id" class="form-label">Unit of Measure <span class="text-danger">*</span></label>
+                                <select class="form-select @error('uom_id') is-invalid @enderror" id="uom_id" name="uom_id" required>
+                                    <option value="">Select Unit of Measure</option>
+                                    @foreach($uoms->groupBy('category') as $category => $categoryUoms)
+                                        <optgroup label="{{ $category }}">
+                                            @foreach($categoryUoms as $uom)
+                                                <option value="{{ $uom->id }}" {{ old('uom_id') == $uom->id ? 'selected' : '' }}>
+                                                    {{ $uom->name }} ({{ $uom->code }})
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
                                 </select>
-                                @error('unit_of_measure')
+                                @error('uom_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <div class="form-text">Select FBR-compliant unit of measure</div>
                             </div>
                         </div>
 

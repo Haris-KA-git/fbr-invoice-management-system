@@ -5,7 +5,7 @@
                 <i class="bi bi-file-earmark-text"></i>
             </div>
             <h1 class="auth-title">Welcome Back</h1>
-            <p class="auth-subtitle">Sign in to your FBR Invoice System account</p>
+            <p class="auth-subtitle">Sign in to your Expert Digital Invoice account</p>
         </div>
 
         <!-- Session Status -->

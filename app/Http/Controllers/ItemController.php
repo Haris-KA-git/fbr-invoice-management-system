@@ -60,8 +60,9 @@ class ItemController extends Controller
         }
 
         $businessProfiles = BusinessProfile::whereIn('id', $profileIds)->get();
+        $uoms = \App\Models\Uom::active()->orderBy('category')->orderBy('name')->get();
 
-        return view('items.create', compact('businessProfiles'));
+        return view('items.create', compact('businessProfiles', 'uoms'));
     }
 
     public function store(Request $request)
@@ -72,7 +73,7 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'hs_code' => 'required|string|max:20',
-            'unit_of_measure' => 'required|string|max:10',
+            'uom_id' => 'required|exists:uoms,id',
             'tax_rate' => 'required|numeric|min:0|max:100',
             'price' => 'required|numeric|min:0',
             'sro_references' => 'nullable|string',
@@ -127,8 +128,9 @@ class ItemController extends Controller
         }
 
         $businessProfiles = BusinessProfile::whereIn('id', $profileIds)->get();
+        $uoms = \App\Models\Uom::active()->orderBy('category')->orderBy('name')->get();
 
-        return view('items.edit', compact('item', 'businessProfiles'));
+        return view('items.edit', compact('item', 'businessProfiles', 'uoms'));
     }
 
     public function update(Request $request, Item $item)
@@ -141,7 +143,7 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'hs_code' => 'required|string|max:20',
-            'unit_of_measure' => 'required|string|max:10',
+            'uom_id' => 'required|exists:uoms,id',
             'tax_rate' => 'required|numeric|min:0|max:100',
             'price' => 'required|numeric|min:0',
             'sro_references' => 'nullable|string',

@@ -17,6 +17,7 @@ class Item extends Model
         'name',
         'description',
         'hs_code',
+        'uom_id',
         'unit_of_measure',
         'tax_rate',
         'price',
@@ -36,8 +37,23 @@ class Item extends Model
         return $this->belongsTo(BusinessProfile::class);
     }
 
+    public function uom(): BelongsTo
+    {
+        return $this->belongsTo(Uom::class);
+    }
+
     public function invoiceItems(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function getUomCodeAttribute(): string
+    {
+        return $this->uom ? $this->uom->code : strtoupper($this->unit_of_measure);
+    }
+
+    public function getUomNameAttribute(): string
+    {
+        return $this->uom ? $this->uom->name : $this->unit_of_measure;
     }
 }

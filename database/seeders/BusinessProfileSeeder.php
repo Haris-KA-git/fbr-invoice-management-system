@@ -14,13 +14,14 @@ class BusinessProfileSeeder extends Seeder
     public function run(): void
     {
         $demoUser = User::where('email', 'demo@business.com')->first();
-        $adminUser = User::where('email', 'admin@fbrvoice.com')->first();
+        $adminUser = User::where('email', 'admin@expertdi.com')->first();
 
         if ($demoUser) {
             BusinessProfile::firstOrCreate([
                 'user_id' => $demoUser->id,
                 'business_name' => 'Demo Trading Company',
             ], [
+                'service_type' => 'Retail',
                 'strn_ntn' => '1234567890123',
                 'address' => 'Plot 123, Block A, Gulberg III, Lahore, Punjab',
                 'province_code' => '01',
@@ -37,6 +38,7 @@ class BusinessProfileSeeder extends Seeder
                 'user_id' => $demoUser->id,
                 'business_name' => 'Tech Solutions Pvt Ltd',
             ], [
+                'service_type' => 'IT Services',
                 'strn_ntn' => '9876543210987',
                 'address' => 'Office 456, IT Tower, DHA Phase 5, Karachi, Sindh',
                 'province_code' => '02',
@@ -53,13 +55,14 @@ class BusinessProfileSeeder extends Seeder
         if ($adminUser) {
             BusinessProfile::firstOrCreate([
                 'user_id' => $adminUser->id,
-                'business_name' => 'FBR Invoice System',
+                'business_name' => 'Expert Digital Invoice',
             ], [
+                'service_type' => 'IT Services',
                 'strn_ntn' => '1111111111111',
                 'address' => 'Software House, F-7 Markaz, Islamabad',
                 'province_code' => '05',
                 'contact_phone' => '+92-51-11111111',
-                'contact_email' => 'admin@fbrvoice.com',
+                'contact_email' => 'admin@expertdi.com',
                 'is_sandbox' => true,
                 'is_active' => true,
             ]);
@@ -68,9 +71,9 @@ class BusinessProfileSeeder extends Seeder
         // Add demo users to business profiles with different roles
         $demoProfile = BusinessProfile::where('business_name', 'Demo Trading Company')->first();
         if ($demoProfile) {
-            $accountant = User::where('email', 'accountant@fbrvoice.com')->first();
-            $cashier = User::where('email', 'cashier@fbrvoice.com')->first();
-            $auditor = User::where('email', 'auditor@fbrvoice.com')->first();
+            $accountant = User::where('email', 'accountant@expertdi.com')->first();
+            $cashier = User::where('email', 'cashier@expertdi.com')->first();
+            $auditor = User::where('email', 'auditor@expertdi.com')->first();
 
             if ($accountant) {
                 $demoProfile->users()->attach($accountant->id, [

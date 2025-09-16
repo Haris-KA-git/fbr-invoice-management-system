@@ -5,7 +5,7 @@
                 <i class="bi bi-person-plus"></i>
             </div>
             <h1 class="auth-title">Create Account</h1>
-            <p class="auth-subtitle">Join the FBR Invoice System today</p>
+            <p class="auth-subtitle">Join Expert Digital Invoice today</p>
         </div>
 
         <form method="POST" action="{{ route('register') }}" novalidate>

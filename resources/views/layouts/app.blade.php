@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'FBR Invoice System') }}</title>
+    <title>{{ config('app.name', 'Expert Digital Invoice') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -160,8 +160,8 @@
             <div class="col-md-3 col-lg-2 px-0">
                 <div class="sidebar p-3">
                     <div class="text-center mb-4">
-                        <h4 class="text-white">FBR Invoice System</h4>
-                        <small class="text-white-50">Digital Invoice Management</small>
+                        <h4 class="text-white">Expert Digital Invoice</h4>
+                        <small class="text-white-50">Professional Invoice Management</small>
                     </div>
 
                     <nav class="nav flex-column">

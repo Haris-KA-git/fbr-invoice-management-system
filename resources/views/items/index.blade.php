@@ -81,7 +81,7 @@
                                 </td>
                                 <td><code>{{ $item->item_code }}</code></td>
                                 <td>{{ $item->hs_code ?: 'N/A' }}</td>
-                                <td>{{ $item->unit_of_measure }}</td>
+                                <td>{{ $item->uom_code }}</td>
                                 <td>₨{{ number_format($item->price, 2) }}</td>
                                 <td>{{ $item->tax_rate }}%</td>
                                 <td>{{ $item->businessProfile->business_name }}</td>

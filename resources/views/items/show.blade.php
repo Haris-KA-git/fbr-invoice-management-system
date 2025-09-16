@@ -33,7 +33,7 @@
                             <p class="mb-3">{{ $item->hs_code ?: 'Not specified' }}</p>
 
                             <h6 class="text-muted">Unit of Measure</h6>
-                            <p class="mb-3">{{ $item->unit_of_measure }}</p>
+                            <p class="mb-3">{{ $item->uom_name }} ({{ $item->uom_code }})</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted">Unit Price</h6>

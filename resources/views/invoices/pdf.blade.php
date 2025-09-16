@@ -151,18 +151,19 @@
             color: #0c5460;
         }
         
-        .fbr-logo {
+        .expert-logo {
             position: absolute;
             top: 20px;
             right: 20px;
             opacity: 0.1;
-            font-size: 48px;
+            font-size: 24px;
             color: #007bff;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="fbr-logo">FBR</div>
+    <div class="expert-logo">Expert DI</div>
     
     <!-- Header -->
     <div class="header clearfix">
@@ -260,7 +261,7 @@
                             <br><small>{{ Str::limit($item->item->description, 50) }}</small>
                         @endif
                     </td>
-                    <td class="text-center">{{ $item->quantity }} {{ $item->item->unit_of_measure }}</td>
+                    <td class="text-center">{{ $item->quantity }} {{ $item->item->uom_code }}</td>
                     <td class="text-right">₨{{ number_format($item->unit_price, 2) }}</td>
                     <td class="text-center">
                         @if($item->discount_rate > 0)
@@ -335,7 +336,7 @@
             @endif
         </div>
         <div style="text-align: center;">
-            {{ $invoice->businessProfile->business_name }} - FBR Compliant Digital Invoice
+            {{ $invoice->businessProfile->business_name }} - Expert Digital Invoice
         </div>
     </div>
 </body>

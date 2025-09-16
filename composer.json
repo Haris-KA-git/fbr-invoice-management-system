@@ -1,8 +1,8 @@
 {
-    "name": "laravel/fbr-invoice-system",
+    "name": "expertdi/expert-digital-invoice",
     "type": "project",
-    "description": "Multi-tenant FBR Invoice Generation System for Pakistan",
-    "keywords": ["laravel", "fbr", "invoice", "pakistan", "multi-tenant"],
+    "description": "Expert Digital Invoice - Multi-tenant FBR Invoice Generation System for Pakistan",
+    "keywords": ["laravel", "fbr", "invoice", "pakistan", "multi-tenant", "expertdi"],
     "license": "MIT",
     "require": {
         "php": "^8.1",

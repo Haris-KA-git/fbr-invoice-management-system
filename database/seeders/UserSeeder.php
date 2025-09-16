@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
     {
         // Admin user
         $admin = User::firstOrCreate([
-            'email' => 'admin@fbrvoice.com',
+            'email' => 'admin@expertdi.com',
         ], [
             'name' => 'System Administrator',
             'password' => Hash::make('admin123'),
@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
 
         // Accountant user
         $accountant = User::firstOrCreate([
-            'email' => 'accountant@fbrvoice.com',
+            'email' => 'accountant@expertdi.com',
         ], [
             'name' => 'Senior Accountant',
             'password' => Hash::make('accountant123'),
@@ -37,7 +37,7 @@ class UserSeeder extends Seeder
 
         // Cashier user
         $cashier = User::firstOrCreate([
-            'email' => 'cashier@fbrvoice.com',
+            'email' => 'cashier@expertdi.com',
         ], [
             'name' => 'Cashier User',
             'password' => Hash::make('cashier123'),
@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
 
         // Auditor user
         $auditor = User::firstOrCreate([
-            'email' => 'auditor@fbrvoice.com',
+            'email' => 'auditor@expertdi.com',
         ], [
             'name' => 'System Auditor',
             'password' => Hash::make('auditor123'),

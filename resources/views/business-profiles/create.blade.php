@@ -38,6 +38,28 @@
                             </div>
 
                             <div class="col-md-6">
+                                <label for="service_type" class="form-label">Service Type <span class="text-danger">*</span></label>
+                                <select class="form-select @error('service_type') is-invalid @enderror" id="service_type" name="service_type" required>
+                                    <option value="">Select Service Type</option>
+                                    <option value="IT Services" {{ old('service_type') == 'IT Services' ? 'selected' : '' }}>IT Services</option>
+                                    <option value="Retail" {{ old('service_type') == 'Retail' ? 'selected' : '' }}>Retail</option>
+                                    <option value="Wholesale" {{ old('service_type') == 'Wholesale' ? 'selected' : '' }}>Wholesale</option>
+                                    <option value="Manufacturing" {{ old('service_type') == 'Manufacturing' ? 'selected' : '' }}>Manufacturing</option>
+                                    <option value="Consultancy" {{ old('service_type') == 'Consultancy' ? 'selected' : '' }}>Consultancy</option>
+                                    <option value="Healthcare" {{ old('service_type') == 'Healthcare' ? 'selected' : '' }}>Healthcare</option>
+                                    <option value="Education" {{ old('service_type') == 'Education' ? 'selected' : '' }}>Education</option>
+                                    <option value="Logistics" {{ old('service_type') == 'Logistics' ? 'selected' : '' }}>Logistics</option>
+                                    <option value="E-commerce" {{ old('service_type') == 'E-commerce' ? 'selected' : '' }}>E-commerce</option>
+                                    <option value="Other" {{ old('service_type') == 'Other' ? 'selected' : '' }}>Other</option>
+                                </select>
+                                @error('service_type')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
                                 <label for="strn_ntn" class="form-label">STRN/NTN</label>
                                 <input type="text" class="form-control @error('strn_ntn') is-invalid @enderror" 
                                        id="strn_ntn" name="strn_ntn" value="{{ old('strn_ntn') }}">

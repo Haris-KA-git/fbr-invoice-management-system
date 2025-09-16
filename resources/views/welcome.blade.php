@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FBR Invoice System - Digital Invoicing Solution for Pakistan</title>
+    <title>Expert Digital Invoice - Digital Invoicing Solution for Pakistan</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -90,7 +90,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: rgba(102, 126, 234, 0.95);">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-file-earmark-text me-2"></i>FBR Invoice System
+                <i class="bi bi-file-earmark-text me-2"></i>Expert Digital Invoice
             </a>
             
             <div class="navbar-nav ms-auto">
@@ -113,10 +113,10 @@
         <div class="container hero-content">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold mb-4">Complete FBR Digital Invoicing Solution</h1>
+                    <h1 class="display-4 fw-bold mb-4">Expert Digital Invoice Solution</h1>
                     <p class="lead mb-4">
-                        Generate FBR-compliant invoices, manage customers and inventory, 
-                        and sync with Pakistan's Federal Board of Revenue in real-time.
+                        Professional FBR-compliant invoicing system for Pakistani businesses. 
+                        Generate invoices, manage customers and inventory with real-time FBR sync.
                     </p>
                     <div class="d-flex gap-3">
                         <a href="{{ route('login') }}" class="btn btn-light btn-lg">
@@ -302,11 +302,11 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5>FBR Invoice System</h5>
-                    <p class="mb-0">Complete Digital Invoicing Solution for Pakistan</p>
+                    <h5>Expert Digital Invoice</h5>
+                    <p class="mb-0">Professional Digital Invoicing Solution for Pakistan</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-0">&copy; {{ date('Y') }} FBR Invoice System. All rights reserved.</p>
+                    <p class="mb-0">&copy; {{ date('Y') }} Expert Digital Invoice. All rights reserved.</p>
                 </div>
             </div>
         </div>

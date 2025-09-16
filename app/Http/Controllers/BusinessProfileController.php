@@ -46,6 +46,7 @@ class BusinessProfileController extends Controller
 
         $validated = $request->validate([
             'business_name' => 'required|string|max:255',
+            'service_type' => 'required|in:IT Services,Retail,Wholesale,Manufacturing,Consultancy,Healthcare,Education,Logistics,E-commerce,Other',
             'strn_ntn' => 'nullable|string|max:20',
             'cnic' => 'nullable|string|max:20',
             'address' => 'required|string|max:500',
@@ -99,6 +100,7 @@ class BusinessProfileController extends Controller
 
         $validated = $request->validate([
             'business_name' => 'required|string|max:255',
+            'service_type' => 'required|in:IT Services,Retail,Wholesale,Manufacturing,Consultancy,Healthcare,Education,Logistics,E-commerce,Other',
             'strn_ntn' => 'nullable|string|max:20',
             'cnic' => 'nullable|string|max:20',
             'address' => 'required|string|max:500',

@@ -1,6 +1,6 @@
-# FBR Invoice System
+# Expert Digital Invoice
 
-A comprehensive multi-tenant Real-Time Invoice Generation System for Pakistan's Federal Board of Revenue (FBR) Digital Invoicing API v1.12.
+Expert Digital Invoice - A comprehensive multi-tenant Real-Time Invoice Generation System for Pakistan's Federal Board of Revenue (FBR) Digital Invoicing API v1.12.
 
 ## Features
 

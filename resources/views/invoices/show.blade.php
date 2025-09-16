@@ -104,7 +104,7 @@
                                             <strong>{{ $item->item->name }}</strong><br>
                                             <small class="text-muted">Code: {{ $item->item->item_code }}</small>
                                         </td>
-                                        <td>{{ $item->quantity }} {{ $item->item->unit_of_measure }}</td>
+                                        <td>{{ $item->quantity }} {{ $item->item->uom_code }}</td>
                                         <td>₨{{ number_format($item->unit_price, 2) }}</td>
                                         <td>
                                             @if($item->discount_rate > 0)
