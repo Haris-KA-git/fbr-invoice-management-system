@@ -10,10 +10,15 @@ class QrCodeService
 {
     public function generateInvoiceQrCode(Invoice $invoice): string
     {
+        // Only generate QR code if invoice has been submitted to FBR
+        if ($invoice->fbr_status !== 'submitted') {
+            return '';
+        }
+
         // FBR DI API v1.12 compliant QR code data
         $qrData = [
             'InvoiceNumber' => $invoice->invoice_number,
-            'USIN' => $invoice->usin ?? '',
+            'USIN' => $invoice->usin ?? 'PENDING',
             'STRN' => $invoice->businessProfile->strn_ntn ?? '',
             'CustomerNTN' => $invoice->customer->ntn_cnic ?? '',
             'InvoiceDate' => $invoice->invoice_date->format('Y-m-d'),
@@ -21,18 +26,26 @@ class QrCodeService
             'SalesTax' => number_format($invoice->sales_tax, 2),
             'BusinessName' => $invoice->businessProfile->business_name,
             'CustomerName' => $invoice->customer->name,
-            'VerificationURL' => $invoice->fbr_verification_url ?? config('app.url') . '/verify/' . $invoice->id,
+            'VerificationURL' => $invoice->fbr_verification_url ?: config('app.url') . '/verify/' . $invoice->id,
         ];
 
         // Create QR code content as per FBR requirements
         $qrContent = "Invoice: {$qrData['InvoiceNumber']}\n";
-        $qrContent .= "USIN: {$qrData['USIN']}\n";
+        if ($qrData['USIN'] && $qrData['USIN'] !== 'PENDING') {
+            $qrContent .= "USIN: {$qrData['USIN']}\n";
+        }
         $qrContent .= "Business: {$qrData['BusinessName']}\n";
-        $qrContent .= "STRN: {$qrData['STRN']}\n";
+        if ($qrData['STRN']) {
+            $qrContent .= "STRN: {$qrData['STRN']}\n";
+        }
         $qrContent .= "Customer: {$qrData['CustomerName']}\n";
+        if ($qrData['CustomerNTN']) {
+            $qrContent .= "Customer NTN: {$qrData['CustomerNTN']}\n";
+        }
         $qrContent .= "Date: {$qrData['InvoiceDate']}\n";
         $qrContent .= "Amount: PKR {$qrData['TotalAmount']}\n";
         $qrContent .= "Tax: PKR {$qrData['SalesTax']}\n";
+        $qrContent .= "Status: FBR SUBMITTED\n";
         $qrContent .= "Verify: {$qrData['VerificationURL']}";
 
         // Generate QR code

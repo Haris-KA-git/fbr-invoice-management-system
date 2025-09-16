@@ -232,7 +232,7 @@
                         <span class="text-primary"><strong>₨{{ number_format($invoice->total_amount, 2) }}</strong></span>
                     </div>
 
-                    @if($invoice->qr_code_path)
+                    @if($invoice->qr_code_path && $invoice->fbr_status === 'submitted')
                         <div class="text-center mt-3">
                             <img src="{{ asset('storage/' . $invoice->qr_code_path) }}" alt="QR Code" class="img-fluid" style="max-width: 120px;">
                             <br><small class="text-muted">Scan for verification</small>
@@ -241,6 +241,18 @@
                                     <i class="bi bi-link-45deg me-1"></i>Verify Online
                                 </a>
                             @endif
+                        </div>
+                    @elseif($invoice->fbr_status === 'submitted')
+                        <div class="text-center mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <br><small class="text-muted">QR Code generating...</small>
+                        </div>
+                    @else
+                        <div class="text-center mt-3">
+                            <i class="bi bi-qr-code text-muted" style="font-size: 3rem;"></i>
+                            <br><small class="text-muted">QR Code available after FBR submission</small>
                         </div>
                     @endif
                     

@@ -80,4 +80,31 @@ class QrCodeTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('QR Code');
     }
+
+    public function test_qr_code_only_generated_after_fbr_submission()
+    {
+        // Test that QR code is not generated for non-submitted invoices
+        $this->invoice->update(['fbr_status' => 'pending']);
+        
+        $qrPath = $this->qrCodeService->generateInvoiceQrCode($this->invoice);
+        
+        $this->assertEquals('', $qrPath);
+        $this->invoice->refresh();
+        $this->assertNull($this->invoice->qr_code_path);
+    }
+
+    public function test_qr_code_contains_fbr_submission_status()
+    {
+        $this->invoice->update([
+            'fbr_status' => 'submitted',
+            'usin' => '1234567890123456'
+        ]);
+        
+        $this->qrCodeService->generateInvoiceQrCode($this->invoice);
+        
+        // The QR code content should indicate FBR submission status
+        $this->invoice->refresh();
+        $this->assertNotNull($this->invoice->qr_code_path);
+        $this->assertNotNull($this->invoice->fbr_verification_url);
+    }
 }

@@ -186,8 +186,6 @@ class InvoiceController extends Controller
             // Queue for FBR submission if not draft
             if (!$request->has('save_as_draft')) {
                 $this->fbrService->queueInvoice($invoice);
-                // Generate QR code for active invoices
-                $this->qrCodeService->generateInvoiceQrCode($invoice);
             }
 
             DB::commit();
@@ -315,11 +313,6 @@ class InvoiceController extends Controller
 
             DB::commit();
             
-            // Regenerate QR code if invoice is active
-            if ($invoice->status === 'active') {
-                $this->qrCodeService->generateInvoiceQrCode($invoice);
-            }
-
             return redirect()->route('invoices.show', $invoice)
                 ->with('success', 'Invoice updated successfully.');
 
@@ -428,9 +421,6 @@ class InvoiceController extends Controller
         
         // Queue for FBR submission
         $this->fbrService->queueInvoice($invoice);
-        
-        // Generate QR code
-        $this->qrCodeService->generateInvoiceQrCode($invoice);
 
         return back()->with('success', 'Invoice activated and queued for FBR submission.');
     }

@@ -219,7 +219,7 @@
             @endif
             @if($invoice->customer->contact_email)
                 <div><strong>Email:</strong> {{ $invoice->customer->contact_email }}</div>
-            @endif
+                    @if($invoice->fbr_status === 'submitted' && $qrCodePath && file_exists($qrCodePath))
         </div>
         
         @if($qrCodePath && file_exists($qrCodePath))
@@ -227,8 +227,16 @@
                 <img src="{{ $qrCodePath }}" alt="QR Code">
                 <div style="font-size: 10px; margin-top: 5px;">
                     <strong>Scan for FBR Verification</strong>
+                                <br>Status: FBR SUBMITTED
                     @if($invoice->usin)
                         <br>USIN: {{ $invoice->usin }}
+                    @elseif($invoice->fbr_status !== 'submitted')
+                        <div class="qr-section">
+                            <div style="border: 2px dashed #ccc; padding: 20px; text-align: center; font-size: 10px;">
+                                <strong>QR Code Available</strong><br>
+                                <strong>After FBR Submission</strong>
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>

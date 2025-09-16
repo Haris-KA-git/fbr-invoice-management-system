@@ -14,7 +14,8 @@ class InvoicePdfService
         
         $data = [
             'invoice' => $invoice,
-            'qrCodePath' => $invoice->qr_code_path ? Storage::disk('public')->path($invoice->qr_code_path) : null,
+            'qrCodePath' => ($invoice->qr_code_path && $invoice->fbr_status === 'submitted') ? 
+                Storage::disk('public')->path($invoice->qr_code_path) : null,
         ];
 
         $pdf = Pdf::loadView('invoices.pdf', $data);
@@ -29,7 +30,8 @@ class InvoicePdfService
         
         $data = [
             'invoice' => $invoice,
-            'qrCodePath' => $invoice->qr_code_path ? Storage::disk('public')->path($invoice->qr_code_path) : null,
+            'qrCodePath' => ($invoice->qr_code_path && $invoice->fbr_status === 'submitted') ? 
+                Storage::disk('public')->path($invoice->qr_code_path) : null,
         ];
 
         $pdf = Pdf::loadView('invoices.pdf', $data);

@@ -122,9 +122,6 @@ class FbrService
             if ($response->successful()) {
                 $responseData = $response->json();
                 
-                // Generate QR code with FBR compliant data
-                $qrPath = $this->qrCodeService->generateInvoiceQrCode($invoice);
-
                 $invoice->update([
                     'fbr_status' => 'submitted',
                     'fbr_response' => json_encode($responseData),
@@ -133,6 +130,9 @@ class FbrService
                     'fbr_verification_url' => $responseData['VerificationURL'] ?? config('app.url') . '/verify/' . $invoice->id,
                     'fbr_error_message' => null,
                 ]);
+
+                // Generate QR code with FBR compliant data AFTER successful submission
+                $qrPath = $this->qrCodeService->generateInvoiceQrCode($invoice);
 
                 return ['success' => true, 'data' => $responseData];
             } else {

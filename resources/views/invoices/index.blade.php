@@ -96,8 +96,10 @@
                                 <td>{{ $invoice->invoiceItems->count() }}</td>
                                 <td>₨{{ number_format($invoice->total_amount, 2) }}</td>
                                 <td class="text-center">
-                                    @if($invoice->qr_code_path)
+                                    @if($invoice->qr_code_path && $invoice->fbr_status === 'submitted')
                                         <i class="bi bi-qr-code text-success" title="QR Code Available"></i>
+                                    @elseif($invoice->fbr_status === 'submitted')
+                                        <i class="bi bi-qr-code text-warning" title="QR Code Generating"></i>
                                     @else
                                         <i class="bi bi-qr-code text-muted" title="No QR Code"></i>
                                     @endif
